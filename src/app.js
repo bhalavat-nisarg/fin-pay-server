@@ -1,5 +1,6 @@
 const express = require('express');
 const dbConn = require('../utils/connection');
+const users = require('../utils/users');
 
 if (process.platform == 'win32') {
     const dotenv = require('dotenv').config();
@@ -13,7 +14,11 @@ app.use(express.json());
 
 app.set('title', 'FinPay Server');
 
-app.post('/api/signup', (req, res) => {});
+app.post('/api/signup', async (req, res) => {
+    //console.log(req.body.user);
+    const out = await users.createUser(req.body.user);
+    res.send({ response: out });
+});
 
 app.post('/api/login', (req, res) => {
     const auth_usr = process.env.API_USER;
@@ -34,10 +39,6 @@ app.post('/api/login', (req, res) => {
                     'Authentication failed. Invalid Username or Password!!',
             });
         } else {
-            // const collection = await connectDB();
-            // const findResult = await collection.find().toArray();
-            // await closeDB();
-            // res.status(200).send(findResult);
             res.send({
                 user: auth_usr,
                 pass: auth_pwd,
@@ -57,9 +58,10 @@ app.all('*', (req, res) => {
 
 app.listen(port, async () => {
     console.log('Server running on port: ' + port);
-    let pool = await dbConn.openPool();
-    await dbConn.openConnection(pool);
-    await dbConn.closePool();
+    // let pool = await dbConn.openPool();
+    // await dbConn.openConnection(pool);
+    // await dbConn.closePool();
+    await dbConn.initializeDB();
 });
 
 function decodeToken(token) {

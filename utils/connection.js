@@ -10,8 +10,7 @@ if (process.platform == 'win32') {
     libPath = 'C:\\Program Files\\Oracle\\instantclient_21_3';
 }
 
-async function connect() {
-    //console.log(libPath);
+async function initDB() {
     try {
         oracledb.initOracleClient({
             libDir: libPath,
@@ -24,6 +23,10 @@ async function connect() {
         console.error(err);
         process.exit(1);
     }
+}
+
+async function connect() {
+    //console.log(libPath);
 
     try {
         pool = await oracledb.createPool({
@@ -41,9 +44,6 @@ async function connect() {
     } catch (err) {
         console.error('init() error: ' + err.message);
     }
-    // finally {
-    //     await closePoolAndExit();
-    // }
 }
 
 async function openConnection(pool, Query, bindOpts) {
@@ -60,13 +60,15 @@ async function openConnection(pool, Query, bindOpts) {
             binds = bindOpts;
         }
         const result = await connection.execute(sql, binds);
-        console.log(result);
+        //console.log(result);
+        return result;
     } catch (err) {
         throw err;
     } finally {
         if (connection) {
             try {
-                //console.log('releasing connection');
+                await connection.commit();
+                console.log('Releasing connection');
                 await connection.close();
             } catch (err) {
                 throw err;
@@ -75,12 +77,12 @@ async function openConnection(pool, Query, bindOpts) {
     }
 }
 
-async function closePoolAndExit() {
-    console.log('\nTerminating...');
+async function closePool() {
+    //console.log('\nTerminating...');
     try {
         await oracledb.getPool().close(10);
-        console.log('Pool Closed');
-        process.exit(0);
+        console.log('Closing Pool');
+        //process.exit(0);
     } catch (err) {
         console.error(err.message);
         process.exit(1);
@@ -90,5 +92,6 @@ async function closePoolAndExit() {
 module.exports = {
     openPool: connect,
     openConnection: openConnection,
-    closePool: closePoolAndExit,
+    closePool: closePool,
+    initializeDB: initDB,
 };
