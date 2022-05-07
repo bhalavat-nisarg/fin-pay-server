@@ -1,4 +1,5 @@
 module.exports = {
+    txnId: Number, // Auto generate sequence
     gateway: String,
     method: String,
     description: String,

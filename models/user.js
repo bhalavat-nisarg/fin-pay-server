@@ -1,4 +1,5 @@
 module.exports = {
+    userId: Number, // Auto generate sequence
     firstName: String,
     lastName: String,
     username: String,
