@@ -1,24 +1,16 @@
 const oracledb = require('oracledb');
-const os = require('os');
-
-if (os.platform == 'win32') {
-    const dotenv = require('dotenv').config();
-}
+const dbConfig = require('./dbConfig');
 
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
-
-const user = process.env.DB_USER;
-const pass = process.env.DB_PASS;
-const dbStr = process.env.DB_CONN_STRING;
 
 let libPath;
 let pool;
 
-if (os.platform == 'win32') {
+if (process.platform == 'win32') {
     libPath = 'C:\\Program Files\\Oracle\\instantclient_21_3';
 }
 
-async function run() {
+async function connect() {
     //console.log(libPath);
     try {
         oracledb.initOracleClient({
@@ -35,9 +27,9 @@ async function run() {
 
     try {
         pool = await oracledb.createPool({
-            user: user,
-            password: pass,
-            connectString: dbStr,
+            user: dbConfig.username,
+            password: dbConfig.password,
+            connectString: dbConfig.connection,
             poolAlias: 'default',
             poolMax: 4,
             poolMin: 4,
@@ -45,22 +37,29 @@ async function run() {
         });
         console.log('Connection pool started');
 
-        await openConnection();
+        return pool;
     } catch (err) {
         console.error('init() error: ' + err.message);
-    } finally {
-        await closePoolAndExit();
     }
+    // finally {
+    //     await closePoolAndExit();
+    // }
 }
 
-async function openConnection() {
-    let connection;
-    //console.log('Connection started');
+async function openConnection(pool, Query, bindOpts) {
+    let connection, sql, binds;
+
+    console.log('Connection started');
     try {
         connection = await pool.getConnection();
-        const sql = `SELECT sysdate FROM dual`;
-        const binds = [1];
-        const result = await connection.execute(sql);
+        if (Query == null) {
+            sql = `SELECT sysdate FROM dual`;
+            binds = [];
+        } else {
+            sql = Query;
+            binds = bindOpts;
+        }
+        const result = await connection.execute(sql, binds);
         console.log(result);
     } catch (err) {
         throw err;
@@ -89,5 +88,7 @@ async function closePoolAndExit() {
 }
 
 module.exports = {
-    dbConnect: run(),
+    openPool: connect,
+    openConnection: openConnection,
+    closePool: closePoolAndExit,
 };
