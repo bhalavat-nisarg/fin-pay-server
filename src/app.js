@@ -29,6 +29,7 @@ app.post('/api/signup', async (req, res) => {
 });
 
 app.post('/api/login', async (req, res) => {
+    // FIXME: fix the logic for login
     const auth_usr = process.env.API_USER;
     const auth_pwd = process.env.API_PASS;
 
@@ -65,21 +66,56 @@ app.get('/api/users/:id', getUsers);
 
 app.get('/api/users', getUsers);
 
-app.delete('/api/users/:id', async (req, res) => {});
+app.patch('/api/users/:id', async (req, res) => {
+    const id = req.params.id;
+    const auth = await authentication(req, res);
+    if (auth.status != 200) {
+        res.status(auth.status).send({
+            status: auth.status,
+            message: auth.message,
+        });
+    } else {
+        const user = {
+            firstName: req.body.firstName || '#NULL',
+            lastName: req.body.lastName || '#NULL',
+            email: req.body.email || '#NULL',
+            mobile: req.body.mobile || '#NULL',
+            id: id,
+            username: auth.username,
+        };
+        console.log(user);
+
+        const resp = await users.updateUser(user);
+
+        if (resp === null) {
+            res.send({
+                status: 200,
+                message: 'Details updated!',
+            });
+        } else {
+            res.status(500).send({
+                status: 500,
+                message: resp,
+            });
+        }
+    }
+});
+
+app.delete('/api/users/:id', deleteUserAccount);
 
 app.all('*', (req, res) => {
-    res.status(500).send({ status: 500, message: 'Method not allowed' });
+    res.status(405).send({ status: 405, message: 'Method not allowed' });
 });
 
 app.listen(port, async () => {
     console.log('Server running on port: ' + port);
     await db.initializeDB();
     await db.openPool();
-    // await db.openConnection(pool);
-    // await db.closePool();
+    //await db.openConnection(pool);
+    //await db.closePool();
 });
 
-//process.once('SIGINT', dbConn.closePool()).once('SIGTERM', dbConn.closePool());
+//process.once('SIGINT', db.closePool()).once('SIGTERM', db.closePool());
 
 function decodeToken(token) {
     let buff = new Buffer.from(token, 'base64');
@@ -99,11 +135,11 @@ function decodeText(inputText) {
 }
 
 async function getUsers(req, res) {
-    let id = req.params.id || req.query.userId;
-    let username = req.query.username;
-    let email = req.query.email;
-    let mobile = req.query.mobile;
-    let total = req.query.totalResults || false;
+    const id = req.params.id || req.query.userId;
+    const username = req.query.username;
+    const email = req.query.email;
+    const mobile = req.query.mobile;
+    const total = req.query.totalResults || false;
     let resp;
 
     const auth = await authentication(req, res);
@@ -116,10 +152,10 @@ async function getUsers(req, res) {
     } else {
         if (username || email || mobile || id) {
             const user = {
-                username,
-                email,
-                mobile,
-                id,
+                username: username,
+                email: email,
+                mobile: mobile,
+                id: id,
             };
             resp = await users.getUser(user);
             if (total) {
@@ -178,6 +214,8 @@ async function authentication(req, res) {
             return {
                 status: 200,
                 message: 'User Authenticated.',
+                userId: authCred.userId,
+                username: authCred.username,
             };
         }
     }
@@ -200,5 +238,31 @@ async function checkUser(user, pass) {
             username: null,
             password: null,
         };
+    }
+}
+
+async function deleteUserAccount(req, res) {
+    const user_id = req.params.id;
+    const auth = await authentication(req, res);
+    if (auth.status != 200) {
+        res.status(auth.status).send({
+            status: auth.status,
+            message: auth.message,
+        });
+    } else if (auth.userId == user_id) {
+        const resp = await users.deleteUser(user_id);
+        if (resp == undefined) {
+            res.status(204).send();
+        } else {
+            res.status(500).send({
+                status: 500,
+                message: 'Internal server error..',
+            });
+        }
+    } else {
+        res.status(403).send({
+            status: 401,
+            message: 'Invalid Credentials or User Id.',
+        });
     }
 }

@@ -4,7 +4,13 @@ const dbConfig = require('./dbConfig');
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
 
 let libPath;
-let poolName = 'default';
+const poolNameDef = 'default';
+const poolNameTP = 'tpPool';
+const poolSts = {
+    poolClosed: oracledb.POOL_STATUS_CLOSED,
+    poolOpen: oracledb.POOL_STATUS_OPEN,
+    poolDraining: oracledb.POOL_STATUS_DRAINING,
+};
 
 if (process.platform == 'win32') {
     libPath = 'C:\\Program Files\\Oracle\\instantclient_21_3';
@@ -30,13 +36,13 @@ async function openPool() {
         const pool = await oracledb.createPool({
             user: dbConfig.username,
             password: dbConfig.password,
-            connectString: dbConfig.connection,
-            poolAlias: poolName,
+            connectString: dbConfig.dbMedium,
+            poolAlias: poolNameDef,
             poolMax: 10,
             poolMin: 10,
             poolIncrement: 0,
         });
-        console.log('Connection pool started for ' + poolName);
+        console.log('Connection pool started for ' + poolNameDef);
 
         return pool;
     } catch (err) {
@@ -76,24 +82,24 @@ async function openConnection(pool, Query, bindOpts) {
 }
 
 async function closePool(pool) {
-    //console.log('\nTerminating...');
     try {
-        console.log('Closing Pool ' + poolName);
-        //await oracledb.getPool(poolName).close(10);
+        console.log('Closing Pool ' + poolNameDef);
         await pool.close(10);
-        //process.exit(0);
     } catch (err) {
         console.error(err.message);
         process.exit(1);
+    } finally {
+        console.log('\nTerminating...');
+        process.exit(0);
     }
 }
 
 async function checkPoolStatus() {
-    return oracledb.getPool(poolName).status;
+    return oracledb.getPool(poolNameDef).status;
 }
 
 function getPool() {
-    return oracledb.getPool(poolName);
+    return oracledb.getPool(poolNameDef);
 }
 
 module.exports = {
@@ -103,4 +109,6 @@ module.exports = {
     getPool: getPool,
     closePool: closePool,
     openConnection: openConnection,
+    poolStatus: poolSts,
+    oracledb: oracledb,
 };

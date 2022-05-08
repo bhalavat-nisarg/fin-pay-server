@@ -4,7 +4,7 @@ async function createUser(newUser) {
     let result;
     let pool;
     const poolStatus = await db.checkPoolStatus();
-    if (poolStatus > 6000) {
+    if (poolStatus === db.poolStatus.poolClosed) {
         pool = await db.openPool();
     } else {
         pool = db.getPool();
@@ -40,7 +40,7 @@ async function createUser(newUser) {
         result = await db.openConnection(pool, sql, bind);
         if (result.rowsAffected == 1) {
             return {
-                status: 'success',
+                status: 200,
                 message: 'User Created!!',
             };
         }
@@ -72,7 +72,10 @@ async function createUser(newUser) {
                 message: 'An account already exists with these details!',
             };
         } else {
-            response = err.message;
+            response = {
+                status: 'failed',
+                message: err.message,
+            };
         }
         return response;
     }
@@ -82,7 +85,7 @@ async function getAllUsers() {
     let result;
     let pool;
     const poolStatus = await db.checkPoolStatus();
-    if (poolStatus > 6000) {
+    if (poolStatus === db.poolStatus.poolClosed) {
         pool = await db.openPool();
     } else {
         pool = db.getPool();
@@ -107,6 +110,7 @@ async function getAllUsers() {
         return result.rows;
     } catch (err) {
         console.error(err, err.message);
+        return err;
     }
 }
 
@@ -114,7 +118,7 @@ async function getUser(user) {
     let result;
     let pool;
     const poolStatus = await db.checkPoolStatus();
-    if (poolStatus > 6000) {
+    if (poolStatus === db.poolStatus.poolClosed) {
         pool = await db.openPool();
     } else {
         pool = db.getPool();
@@ -144,6 +148,7 @@ async function getUser(user) {
         return result.rows;
     } catch (err) {
         console.error(err, err.message);
+        return err;
     }
 }
 
@@ -151,7 +156,7 @@ async function searchUserAccount(username, password) {
     let result;
     let pool;
     const poolStatus = await db.checkPoolStatus();
-    if (poolStatus > 6000) {
+    if (poolStatus === db.poolStatus.poolClosed) {
         pool = await db.openPool();
     } else {
         pool = db.getPool();
@@ -171,6 +176,107 @@ async function searchUserAccount(username, password) {
         return result.rows;
     } catch (err) {
         console.log(err, err.message);
+        return err;
+    }
+}
+
+async function deleteUser(id) {
+    let result;
+    let pool;
+    const poolStatus = await db.checkPoolStatus();
+    if (poolStatus === db.poolStatus.poolClosed) {
+        pool = await db.openPool();
+    } else {
+        pool = db.getPool();
+    }
+
+    const sql = `DELETE FROM xxfin_users XFU WHERE XFU.user_id = TRIM(:1)`;
+    const bind = [id];
+
+    try {
+        result = await db.openConnection(pool, sql, bind);
+        return result.rows;
+    } catch (err) {
+        console.log(err, err.message);
+        return err;
+    }
+}
+
+async function updateUser(user) {
+    let result;
+    let pool;
+    const poolStatus = await db.checkPoolStatus();
+    if (poolStatus === db.poolStatus.poolClosed) {
+        pool = await db.openPool();
+    } else {
+        pool = db.getPool();
+    }
+
+    const sql = `DECLARE
+                    lc_fname  VARCHAR2(120) := :2;
+                    lc_lname  VARCHAR2(120) := :3;
+                    lc_email  VARCHAR2(50)  := :4;
+                    lc_mobile VARCHAR2(20)  := :5;
+                    lc_e_ver  VARCHAR2(5)   := 'N';
+                    lc_m_ver  VARCHAR2(5)   := 'N';
+                    ln_id     NUMBER        := :1;
+                BEGIN
+                    FOR ln_i IN 1..4 LOOP
+                        IF (lc_fname = '#NULL') THEN
+                            SELECT first_name
+                            INTO lc_fname
+                            FROM xxfin_users
+                            WHERE user_id = ln_id;
+                        ELSIF (lc_lname = '#NULL') THEN
+                            SELECT last_name
+                            INTO lc_lname
+                            FROM xxfin_users
+                            WHERE user_id = ln_id;
+                        ELSIF (lc_email = '#NULL') THEN
+                            SELECT email, email_verified
+                            INTO lc_email, lc_e_ver
+                            FROM xxfin_users
+                            WHERE user_id = ln_id;
+                        ELSIF (lc_mobile = '#NULL') THEN
+                            SELECT mobile, mobile_verified
+                            INTO lc_mobile, lc_m_ver
+                            FROM xxfin_users
+                            WHERE user_id = ln_id;
+                        END IF;
+                    END LOOP;
+                    
+                    UPDATE xxfin_users XFU 
+                    SET XFU.first_name = lc_fname
+                        , XFU.last_name = lc_lname
+                        , XFU.email = lc_email
+                        , XFU.mobile = lc_mobile
+                        , XFU.email_verified = lc_e_ver
+                        , XFU.mobile_verified = lc_m_ver
+                        , XFU.last_updated_date = SYSDATE
+                    WHERE XFU.user_id = ln_id;
+                    
+                    COMMIT;
+                EXCEPTION
+                WHEN OTHERS THEN
+                    :error_msg := SQLERRM;
+
+                END;`;
+
+    const bind = {
+        1: user.id,
+        2: user.firstName,
+        3: user.lastName,
+        4: user.email,
+        5: user.mobile,
+        error_msg: { dir: db.oracledb.BIND_OUT, type: db.oracledb.STRING },
+    };
+
+    try {
+        result = await db.openConnection(pool, sql, bind);
+        return result.outBinds.error_msg;
+    } catch (err) {
+        console.log(err, err.message);
+        return err;
     }
 }
 
@@ -179,4 +285,6 @@ module.exports = {
     getAllUsers,
     getUser,
     searchUserAccount,
+    deleteUser,
+    updateUser,
 };
