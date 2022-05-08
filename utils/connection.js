@@ -4,7 +4,7 @@ const dbConfig = require('./dbConfig');
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
 
 let libPath;
-let pool;
+let poolName = 'default';
 
 if (process.platform == 'win32') {
     libPath = 'C:\\Program Files\\Oracle\\instantclient_21_3';
@@ -25,20 +25,18 @@ async function initDB() {
     }
 }
 
-async function connect() {
-    //console.log(libPath);
-
+async function openPool() {
     try {
-        pool = await oracledb.createPool({
+        const pool = await oracledb.createPool({
             user: dbConfig.username,
             password: dbConfig.password,
             connectString: dbConfig.connection,
-            poolAlias: 'default',
-            poolMax: 4,
-            poolMin: 4,
+            poolAlias: poolName,
+            poolMax: 10,
+            poolMin: 10,
             poolIncrement: 0,
         });
-        console.log('Connection pool started');
+        console.log('Connection pool started for ' + poolName);
 
         return pool;
     } catch (err) {
@@ -47,7 +45,7 @@ async function connect() {
 }
 
 async function openConnection(pool, Query, bindOpts) {
-    let connection, sql, binds;
+    let connection, sql, binds, result;
 
     console.log('Connection started');
     try {
@@ -59,7 +57,7 @@ async function openConnection(pool, Query, bindOpts) {
             sql = Query;
             binds = bindOpts;
         }
-        const result = await connection.execute(sql, binds);
+        result = await connection.execute(sql, binds);
         //console.log(result);
         return result;
     } catch (err) {
@@ -77,11 +75,12 @@ async function openConnection(pool, Query, bindOpts) {
     }
 }
 
-async function closePool() {
+async function closePool(pool) {
     //console.log('\nTerminating...');
     try {
-        await oracledb.getPool().close(10);
-        console.log('Closing Pool');
+        console.log('Closing Pool ' + poolName);
+        //await oracledb.getPool(poolName).close(10);
+        await pool.close(10);
         //process.exit(0);
     } catch (err) {
         console.error(err.message);
@@ -89,9 +88,19 @@ async function closePool() {
     }
 }
 
+async function checkPoolStatus() {
+    return oracledb.getPool(poolName).status;
+}
+
+function getPool() {
+    return oracledb.getPool(poolName);
+}
+
 module.exports = {
-    openPool: connect,
-    openConnection: openConnection,
-    closePool: closePool,
     initializeDB: initDB,
+    checkPoolStatus: checkPoolStatus,
+    openPool: openPool,
+    getPool: getPool,
+    closePool: closePool,
+    openConnection: openConnection,
 };
