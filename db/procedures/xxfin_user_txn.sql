@@ -21,7 +21,7 @@ AS
     ln_amount       NUMBER := 0.00;
 BEGIN
 
-    ln_amount := TO_NUMBER(SUBSTR(p_amount,0, INSTR(p_amount, '.'))) + TO_NUMBER(SUBSTR(p_amount,INSTR(p_amount, '.')+1,2)) / 100;
+    ln_amount := TRUNC(p_amount, 2);
 
     SELECT XFU.balance, XFU.currency
       INTO ln_src_bal, lc_src_cur
