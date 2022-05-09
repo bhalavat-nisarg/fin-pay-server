@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../utils/connection');
 const users = require('../utils/users');
+const txn = require('../utils/txn');
 const transform = require('../utils/transform');
 
 if (process.platform == 'win32') {
@@ -27,7 +28,7 @@ app.get('/api/users', getUsers);
 app.patch('/api/users/:id', updateUserDetails);
 app.delete('/api/users/:id', deleteUserAccount);
 
-app.post('/api/txn/load', async (req, res) => {
+app.post('/api/txn/exchange', async (req, res) => {
     const targetId = req.body.targetId;
     const sourceId = req.body.sourceId;
     const currency = req.body.currency;
@@ -38,6 +39,67 @@ app.post('/api/txn/load', async (req, res) => {
     const desc = req.body.description;
 
     const auth = await authentication(req, res);
+
+    const txnObj = {
+        targetId,
+        sourceId,
+        currency,
+        gateway,
+        amount,
+        method,
+        mode,
+        desc,
+    };
+
+    if (auth.status != 200) {
+        res.status(auth.status).send({
+            status: auth.status,
+            message: auth.message,
+        });
+    } else if (
+        !targetId ||
+        !sourceId ||
+        !currency ||
+        !gateway ||
+        !amount ||
+        !method ||
+        !mode
+    ) {
+        res.status(400).send({
+            status: 400,
+            message:
+                'Mandatory objects not provided to complete the transaction.',
+        });
+    } else if (
+        mode.toUpperCase() == 'DEPOSIT' ||
+        mode.toUpperCase() == 'WITHDRAW' ||
+        mode.toUpperCase() == 'P2P'
+    ) {
+        console.log('Amount transfer in progress..');
+        //console.log(txnObj);
+        const resp = await txn.loadMoney(txnObj);
+
+        if (resp === null) {
+            console.log('Amount transfer successful!');
+            res.send({
+                status: 200,
+                message: 'Amount transfer successful!',
+            });
+        } else {
+            console.log('error: ' + resp);
+            res.status(403).send({
+                status: 403,
+                message: resp,
+            });
+        }
+    } else {
+        res.status(403).send({
+            status: 403,
+            message:
+                "Invalid value provided for identifier 'Mode'. " +
+                'Valid values are DEPOSIT, WITHDRAW, P2P.',
+        });
+    }
 });
 
 app.all('*', (req, res) => {

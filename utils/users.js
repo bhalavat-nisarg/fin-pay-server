@@ -229,7 +229,6 @@ async function updateUser(user) {
     const bind = {
         fname: {
             dir: db.oracledb.BIND_IN,
-            type: db.oracledb.DB_TYPE_VARCHAR,
             val: user.firstName,
         },
         lname: {
