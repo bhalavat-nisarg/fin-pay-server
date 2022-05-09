@@ -16,7 +16,7 @@ async function createUser(newUser) {
                                          , mobile
                                          , username
                                          , password
-                                         , verified
+                                         , currency
                                          , creation_date
                                          , last_updated_date) 
                                     VALUES  ( TRIM(:v_fname)
@@ -25,7 +25,7 @@ async function createUser(newUser) {
                                             , TRIM(:v_mobile)
                                             , TRIM(:v_user)
                                             , TRIM(:v_pass)
-                                            , 'N'
+                                            , TRIM(:v_currency)
                                             , SYSDATE
                                             , SYSDATE)`;
     const bind = [
@@ -35,17 +35,26 @@ async function createUser(newUser) {
         newUser.mobile,
         newUser.username,
         newUser.password,
+        newUser.currency,
     ];
+
+    const logObj = {
+        objectId: null,
+        objectName: null,
+        loggingEvent: null,
+        description: null,
+    };
+
     try {
         result = await db.openConnection(pool, sql, bind);
         if (result.rowsAffected == 1) {
             return {
-                status: 200,
+                status: 201,
                 message: 'User Created!!',
             };
         }
     } catch (err) {
-        let response, userMsg, emailMsg, mobileMsg, accMsg;
+        let response, userMsg, emailMsg, mobileMsg;
         console.error('print err', err, err.message);
         userMsg = err.message.includes('USERNAME');
         emailMsg = err.message.includes('EMAIL');
@@ -53,27 +62,28 @@ async function createUser(newUser) {
         accMsg = err.message.includes('ACCOUNT');
         if (err.errorNum == 1 && userMsg) {
             response = {
-                status: 'failed',
-                message: 'Username is already in use!',
+                status: 202,
+                message:
+                    'An account already exists with these details! ' +
+                    'Kindly use a different username,',
             };
         } else if (err.errorNum == 1 && emailMsg) {
             response = {
-                status: 'failed',
-                message: 'Email ID is already in use!',
+                status: 202,
+                message:
+                    'An account already exists with these details! ' +
+                    'Kindly use a different email id,',
             };
         } else if (err.errorNum == 1 && mobileMsg) {
             response = {
-                status: 'failed',
-                message: 'Mobile No is already in use!',
-            };
-        } else if (err.errorNum == 1 && mobileMsg) {
-            response = {
-                status: 'failed',
-                message: 'An account already exists with these details!',
+                status: 202,
+                message:
+                    'An account already exists with these details! ' +
+                    'Kindly use a different mobile no,',
             };
         } else {
             response = {
-                status: 'failed',
+                status: 400,
                 message: err.message,
             };
         }
@@ -212,63 +222,34 @@ async function updateUser(user) {
         pool = db.getPool();
     }
 
-    const sql = `DECLARE
-                    lc_fname  VARCHAR2(120) := :2;
-                    lc_lname  VARCHAR2(120) := :3;
-                    lc_email  VARCHAR2(50)  := :4;
-                    lc_mobile VARCHAR2(20)  := :5;
-                    lc_e_ver  VARCHAR2(5)   := 'N';
-                    lc_m_ver  VARCHAR2(5)   := 'N';
-                    ln_id     NUMBER        := :1;
-                BEGIN
-                    FOR ln_i IN 1..4 LOOP
-                        IF (lc_fname = '#NULL') THEN
-                            SELECT first_name
-                            INTO lc_fname
-                            FROM xxfin_users
-                            WHERE user_id = ln_id;
-                        ELSIF (lc_lname = '#NULL') THEN
-                            SELECT last_name
-                            INTO lc_lname
-                            FROM xxfin_users
-                            WHERE user_id = ln_id;
-                        ELSIF (lc_email = '#NULL') THEN
-                            SELECT email, email_verified
-                            INTO lc_email, lc_e_ver
-                            FROM xxfin_users
-                            WHERE user_id = ln_id;
-                        ELSIF (lc_mobile = '#NULL') THEN
-                            SELECT mobile, mobile_verified
-                            INTO lc_mobile, lc_m_ver
-                            FROM xxfin_users
-                            WHERE user_id = ln_id;
-                        END IF;
-                    END LOOP;
-                    
-                    UPDATE xxfin_users XFU 
-                    SET XFU.first_name = lc_fname
-                        , XFU.last_name = lc_lname
-                        , XFU.email = lc_email
-                        , XFU.mobile = lc_mobile
-                        , XFU.email_verified = lc_e_ver
-                        , XFU.mobile_verified = lc_m_ver
-                        , XFU.last_updated_date = SYSDATE
-                    WHERE XFU.user_id = ln_id;
-                    
-                    COMMIT;
-                EXCEPTION
-                WHEN OTHERS THEN
-                    :error_msg := SQLERRM;
-
+    const sql = `BEGIN 
+                    XXFIN_UPDATE_USER(:fname, :lname, :email, :mobile, :userId, :ids, :error_msg);
                 END;`;
 
     const bind = {
-        1: user.id,
-        2: user.firstName,
-        3: user.lastName,
-        4: user.email,
-        5: user.mobile,
-        error_msg: { dir: db.oracledb.BIND_OUT, type: db.oracledb.STRING },
+        fname: {
+            dir: db.oracledb.BIND_IN,
+            type: db.oracledb.DB_TYPE_VARCHAR,
+            val: user.firstName,
+        },
+        lname: {
+            dir: db.oracledb.BIND_IN,
+            val: user.lastName,
+        },
+        email: {
+            dir: db.oracledb.BIND_IN,
+            val: user.email,
+        },
+        mobile: {
+            dir: db.oracledb.BIND_IN,
+            val: user.mobile,
+        },
+        userId: {
+            dir: db.oracledb.BIND_IN,
+            val: user.id,
+        },
+        ids: { dir: db.oracledb.BIND_OUT },
+        error_msg: { dir: db.oracledb.BIND_OUT },
     };
 
     try {

@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../utils/connection');
 const users = require('../utils/users');
+const transform = require('../utils/transform');
 
 if (process.platform == 'win32') {
     const dotenv = require('dotenv').config();
@@ -11,97 +12,33 @@ const port = process.env.PORT || 3000;
 
 let pool;
 
+// TODO: Log events of login, signup, and delete user
+
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 app.set('title', 'FinPay Server');
 
-app.post('/api/signup', async (req, res) => {
-    const out = await users.createUser({
-        firstName: req.body.user.firstName,
-        lastName: req.body.user.lastName,
-        username: req.body.user.username,
-        password: encodeText(encodeText(req.body.user.password)),
-        email: req.body.user.email,
-        mobile: req.body.user.mobile,
-    });
-    res.send({ status: out.status, message: out.message });
-});
-
-app.post('/api/login', async (req, res) => {
-    // FIXME: fix the logic for login
-    const auth_usr = process.env.API_USER;
-    const auth_pwd = process.env.API_PASS;
-
-    if (!req.headers.authorization) {
-        res.status(401).send({
-            status: 401,
-            message: 'Authentication failed. Please provide a Token!',
-        });
-    } else {
-        let encoded = req.headers.authorization.replace('Basic ', '');
-        let auth = decodeToken(encoded);
-        if (auth.user !== auth_usr || auth.pass !== auth_pwd) {
-            res.status(401).send({
-                status: 401,
-                message:
-                    'Authentication failed. Invalid Username or Password!!',
-            });
-        } else {
-            const resp = await checkUser(auth_usr, auth_pwd);
-            res.send({
-                status: 200,
-                message: 'User found!',
-                items: {
-                    userId: resp.userId,
-                    firstName: resp.firstName,
-                    username: resp.username,
-                },
-            });
-        }
-    }
-});
+app.post('/api/signup', registerUser);
+app.post('/api/login', loginUser);
 
 app.get('/api/users/:id', getUsers);
-
 app.get('/api/users', getUsers);
-
-app.patch('/api/users/:id', async (req, res) => {
-    const id = req.params.id;
-    const auth = await authentication(req, res);
-    if (auth.status != 200) {
-        res.status(auth.status).send({
-            status: auth.status,
-            message: auth.message,
-        });
-    } else {
-        const user = {
-            firstName: req.body.firstName || '#NULL',
-            lastName: req.body.lastName || '#NULL',
-            email: req.body.email || '#NULL',
-            mobile: req.body.mobile || '#NULL',
-            id: id,
-            username: auth.username,
-        };
-        console.log(user);
-
-        const resp = await users.updateUser(user);
-
-        if (resp === null) {
-            res.send({
-                status: 200,
-                message: 'Details updated!',
-            });
-        } else {
-            res.status(500).send({
-                status: 500,
-                message: resp,
-            });
-        }
-    }
-});
-
+app.patch('/api/users/:id', updateUserDetails);
 app.delete('/api/users/:id', deleteUserAccount);
+
+app.post('/api/txn/load', async (req, res) => {
+    const targetId = req.body.targetId;
+    const sourceId = req.body.sourceId;
+    const currency = req.body.currency;
+    const gateway = req.body.gateway;
+    const amount = req.body.amount;
+    const method = req.body.method;
+    const mode = req.body.mode;
+    const desc = req.body.description;
+
+    const auth = await authentication(req, res);
+});
 
 app.all('*', (req, res) => {
     res.status(405).send({ status: 405, message: 'Method not allowed' });
@@ -117,21 +54,20 @@ app.listen(port, async () => {
 
 //process.once('SIGINT', db.closePool()).once('SIGTERM', db.closePool());
 
-function decodeToken(token) {
-    let buff = new Buffer.from(token, 'base64');
-    let decoded = buff.toString('ascii');
-    let arr = decoded.split(':');
-    let user = arr[0];
-    let pass = encodeText(encodeText(arr[1]));
-    return { user, pass };
-}
-
-function encodeText(inputText) {
-    return Buffer.from(inputText, 'utf-8').toString('base64');
-}
-
-function decodeText(inputText) {
-    return Buffer.from(inputText, 'base64').toString('ascii');
+async function registerUser(req, res) {
+    console.log('Registering user..');
+    const out = await users.createUser({
+        firstName: req.body.user.firstName,
+        lastName: req.body.user.lastName,
+        username: req.body.user.username,
+        password: transform.encodeText(
+            transform.encodeText(req.body.user.password)
+        ),
+        email: req.body.user.email,
+        mobile: req.body.user.mobile,
+        currency: 'INR',
+    });
+    res.send({ status: out.status, message: out.message });
 }
 
 async function getUsers(req, res) {
@@ -150,6 +86,7 @@ async function getUsers(req, res) {
             message: auth.message,
         });
     } else {
+        console.log('Searching user based on query');
         if (username || email || mobile || id) {
             const user = {
                 username: username,
@@ -192,25 +129,28 @@ async function getUsers(req, res) {
 
 async function authentication(req, res) {
     if (!req.headers.authorization) {
+        console.log('No token. User authentication failed!');
         return {
             status: 401,
             message: 'Authentication failed. Please provide a Token!',
         };
     } else {
         const encoded = req.headers.authorization.replace('Basic ', '');
-        const auth = decodeToken(encoded);
+        const auth = transform.decodeToken(encoded);
         const authCred = await checkUser(auth.user, auth.pass);
         if (
             authCred.userId == 0 ||
             auth.user !== authCred.username ||
             auth.pass !== authCred.password
         ) {
+            console.log('User authentication failed!');
             return {
                 status: 401,
                 message:
                     'Authentication failed. Invalid Username or Password!!',
             };
         } else {
+            console.log('User Authenticated');
             return {
                 status: 200,
                 message: 'User Authenticated.',
@@ -221,7 +161,26 @@ async function authentication(req, res) {
     }
 }
 
+async function loginUser(req, res) {
+    const auth = await authentication(req, res);
+
+    if (auth.status != 200) {
+        res.status(auth.status).send({
+            status: auth.status,
+            message: auth.message,
+        });
+    } else {
+        console.log('User logged in');
+        res.send({
+            status: 200,
+            message: 'Welcome back ' + auth.username + '!!',
+            userId: auth.userId,
+        });
+    }
+}
+
 async function checkUser(user, pass) {
+    console.log('search using user credentials');
     const resp = await users.searchUserAccount(user, pass);
     const cnt = Object.keys(resp).length;
     if (cnt > 0) {
@@ -250,8 +209,10 @@ async function deleteUserAccount(req, res) {
             message: auth.message,
         });
     } else if (auth.userId == user_id) {
+        console.log('Deleting the user..');
         const resp = await users.deleteUser(user_id);
         if (resp == undefined) {
+            console.log('User deleted!');
             res.status(204).send();
         } else {
             res.status(500).send({
@@ -261,8 +222,44 @@ async function deleteUserAccount(req, res) {
         }
     } else {
         res.status(403).send({
-            status: 401,
+            status: 403,
             message: 'Invalid Credentials or User Id.',
         });
+    }
+}
+
+async function updateUserDetails(req, res) {
+    const id = req.params.id;
+    const auth = await authentication(req, res);
+    if (auth.status != 200) {
+        res.status(auth.status).send({
+            status: auth.status,
+            message: auth.message,
+        });
+    } else {
+        const user = {
+            firstName: req.body.firstName || '#NULL',
+            lastName: req.body.lastName || '#NULL',
+            email: req.body.email || '#NULL',
+            mobile: req.body.mobile || '#NULL',
+            id: id,
+            username: auth.username,
+        };
+        console.log('Updating the user details..');
+
+        const resp = await users.updateUser(user);
+
+        if (resp === null) {
+            console.log('User details updated!');
+            res.send({
+                status: 200,
+                message: 'User details updated!',
+            });
+        } else {
+            res.status(500).send({
+                status: 500,
+                message: resp,
+            });
+        }
     }
 }

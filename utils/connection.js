@@ -5,7 +5,6 @@ oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
 
 let libPath;
 const poolNameDef = 'default';
-const poolNameTP = 'tpPool';
 const poolSts = {
     poolClosed: oracledb.POOL_STATUS_CLOSED,
     poolOpen: oracledb.POOL_STATUS_OPEN,
@@ -36,7 +35,7 @@ async function openPool() {
         const pool = await oracledb.createPool({
             user: dbConfig.username,
             password: dbConfig.password,
-            connectString: dbConfig.dbMedium,
+            connectString: dbConfig.dbTxn,
             poolAlias: poolNameDef,
             poolMax: 10,
             poolMin: 10,
