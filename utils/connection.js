@@ -22,7 +22,7 @@ async function initDB() {
         });
         oracledb.version;
 
-        //console.log('File opened!');
+        console.log('Client activated');
     } catch (err) {
         console.error('Whoops!');
         console.error(err);

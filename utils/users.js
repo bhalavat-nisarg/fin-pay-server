@@ -162,7 +162,7 @@ async function getUser(user) {
     }
 }
 
-async function searchUserAccount(username, password) {
+async function searchUserAccount(username) {
     let result;
     let pool;
     const poolStatus = await db.checkPoolStatus();
@@ -177,9 +177,8 @@ async function searchUserAccount(username, password) {
                       , XFU.username
                       , XFU.password
                    FROM xxfin_users XFU
-                  WHERE UPPER(XFU.username) = UPPER(TRIM(:1))
-                    AND XFU.password = TRIM(:2)`;
-    const bind = [username, password];
+                  WHERE UPPER(XFU.username) = UPPER(TRIM(:1))`;
+    const bind = [username];
 
     try {
         result = await db.openConnection(pool, sql, bind);

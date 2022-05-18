@@ -1,16 +1,19 @@
 const users = require('../utils/users');
 const txn = require('../utils/txn');
 const transform = require('../utils/transform');
+const bcrypt = require('bcrypt');
+
+const saltRounds = 10;
 
 async function registerUser(req, res) {
     console.log('Registering user..');
+    const hashPass = await bcrypt.hash(req.body.user.password, saltRounds);
+    console.log(hashPass);
     const out = await users.createUser({
         firstName: req.body.user.firstName,
         lastName: req.body.user.lastName,
         username: req.body.user.username,
-        password: transform.encodeText(
-            transform.encodeText(req.body.user.password)
-        ),
+        password: hashPass,
         email: req.body.user.email,
         mobile: req.body.user.mobile,
         currency: 'INR',
@@ -232,24 +235,30 @@ async function userTransaction(req, res) {
 }
 
 async function checkUser(user, pass) {
+    //console.log(user, pass);
     console.log('search using user credentials');
-    const resp = await users.searchUserAccount(user, pass);
+    const resp = await users.searchUserAccount(user);
+    //console.log(resp);
     const cnt = Object.keys(resp).length;
     if (cnt > 0) {
-        return {
-            userId: resp[0].USER_ID,
-            firstName: resp[0].FIRST_NAME,
-            username: resp[0].USERNAME,
-            password: resp[0].PASSWORD,
-        };
-    } else {
-        return {
-            userId: 0,
-            firstName: null,
-            username: null,
-            password: null,
-        };
+        const hashPass = resp[0].PASSWORD;
+        const validUser = await bcrypt.compare(pass, hashPass);
+        //console.log(hashPass, validUser);
+        if (validUser) {
+            return {
+                userId: resp[0].USER_ID,
+                firstName: resp[0].FIRST_NAME,
+                username: resp[0].USERNAME,
+                password: validUser,
+            };
+        }
     }
+    return {
+        userId: 0,
+        firstName: null,
+        username: null,
+        password: null,
+    };
 }
 
 async function authentication(req, res) {
@@ -266,7 +275,7 @@ async function authentication(req, res) {
         if (
             authCred.userId == 0 ||
             auth.user !== authCred.username ||
-            auth.pass !== authCred.password
+            !authCred.password
         ) {
             console.log('User authentication failed!');
             return {

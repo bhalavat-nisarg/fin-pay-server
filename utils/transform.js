@@ -9,7 +9,7 @@ function decodeToken(token) {
     let decoded = buff.toString('ascii');
     let arr = decoded.split(':');
     let user = arr[0];
-    let pass = encodeText(encodeText(arr[1]));
+    let pass = arr[1];
     return { user, pass };
 }
 
