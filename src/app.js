@@ -1,7 +1,7 @@
 const express = require('express');
-const db = require('../utils/connection');
 const fn = require('./fn');
 const os = require('os');
+const oci = require('../utils/oci');
 
 if (os.platform == 'win32') {
     const dotenv = require('dotenv').config();
@@ -33,8 +33,6 @@ app.all('*', (req, res) => {
 
 app.listen(port, async () => {
     console.log('Server running on port: ' + port);
-    await db.initializeDB();
-    await db.openPool();
+    await oci.loadConfigFile();
+    fn.getAppStatus();
 });
-
-//process.once('SIGINT', db.closePool()).once('SIGTERM', db.closePool());

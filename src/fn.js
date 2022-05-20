@@ -2,29 +2,47 @@ const users = require('../utils/users');
 const txn = require('../utils/txn');
 const transform = require('../utils/transform');
 const bcrypt = require('bcrypt');
+const oci = require('../utils/oci');
 
 const saltRounds = 10;
+let appStatus = 'STOPPED';
 
 async function registerUser(req, res) {
-    console.log('Registering user..');
-    const hashPass = await bcrypt.hash(req.body.user.password, saltRounds);
-    console.log(hashPass);
-    const out = await users.createUser({
-        firstName: req.body.user.firstName,
-        lastName: req.body.user.lastName,
-        username: req.body.user.username,
-        password: hashPass,
-        email: req.body.user.email,
-        mobile: req.body.user.mobile,
-        currency: 'INR',
-    });
+    let out;
+    console.log(appStatus);
+    if (appStatus != 'AVAILABLE') {
+        out = {
+            status: 503,
+            message: 'Service Unavailable!',
+        };
+    } else {
+        console.log('Registering user..');
+        const hashPass = await bcrypt.hash(req.body.user.password, saltRounds);
+        console.log(hashPass);
+        out = await users.createUser({
+            firstName: req.body.user.firstName,
+            lastName: req.body.user.lastName,
+            username: req.body.user.username,
+            password: hashPass,
+            email: req.body.user.email,
+            mobile: req.body.user.mobile,
+            currency: 'INR',
+        });
+    }
     res.status(out.status).send({ status: out.status, message: out.message });
 }
 
 async function loginUser(req, res) {
     const auth = await authentication(req, res);
 
-    if (auth.status != 200) {
+    if (auth.status == 503) {
+        res.setHeader('Retry-After', '10');
+
+        res.status(auth.status).send({
+            status: auth.status,
+            message: auth.message,
+        });
+    } else if (auth.status != 200 && auth.status != 503) {
         res.status(auth.status).send({
             status: auth.status,
             message: auth.message,
@@ -49,7 +67,14 @@ async function getUsers(req, res) {
 
     const auth = await authentication(req, res);
 
-    if (auth.status != 200) {
+    if (auth.status == 503) {
+        res.setHeader('Retry-After', '10');
+
+        res.status(auth.status).send({
+            status: auth.status,
+            message: auth.message,
+        });
+    } else if (auth.status != 200 && auth.status != 503) {
         res.status(auth.status).send({
             status: auth.status,
             message: auth.message,
@@ -99,7 +124,14 @@ async function getUsers(req, res) {
 async function updateUserDetails(req, res) {
     const id = req.params.id;
     const auth = await authentication(req, res);
-    if (auth.status != 200) {
+    if (auth.status == 503) {
+        res.setHeader('Retry-After', '10');
+
+        res.status(auth.status).send({
+            status: auth.status,
+            message: auth.message,
+        });
+    } else if (auth.status != 200 && auth.status != 503) {
         res.status(auth.status).send({
             status: auth.status,
             message: auth.message,
@@ -135,7 +167,14 @@ async function updateUserDetails(req, res) {
 async function deleteUserAccount(req, res) {
     const user_id = req.params.id;
     const auth = await authentication(req, res);
-    if (auth.status != 200) {
+    if (auth.status == 503) {
+        res.setHeader('Retry-After', '10');
+
+        res.status(auth.status).send({
+            status: auth.status,
+            message: auth.message,
+        });
+    } else if (auth.status != 200 && auth.status != 503) {
         res.status(auth.status).send({
             status: auth.status,
             message: auth.message,
@@ -183,7 +222,14 @@ async function userTransaction(req, res) {
         desc,
     };
 
-    if (auth.status != 200) {
+    if (auth.status == 503) {
+        res.setHeader('Retry-After', '10');
+
+        res.status(auth.status).send({
+            status: auth.status,
+            message: auth.message,
+        });
+    } else if (auth.status != 200 && auth.status != 503) {
         res.status(auth.status).send({
             status: auth.status,
             message: auth.message,
@@ -235,15 +281,14 @@ async function userTransaction(req, res) {
 }
 
 async function checkUser(user, pass) {
-    //console.log(user, pass);
     console.log('search using user credentials');
     const resp = await users.searchUserAccount(user);
-    //console.log(resp);
+
     const cnt = Object.keys(resp).length;
     if (cnt > 0) {
         const hashPass = resp[0].PASSWORD;
         const validUser = await bcrypt.compare(pass, hashPass);
-        //console.log(hashPass, validUser);
+
         if (validUser) {
             return {
                 userId: resp[0].USER_ID,
@@ -262,7 +307,13 @@ async function checkUser(user, pass) {
 }
 
 async function authentication(req, res) {
-    if (!req.headers.authorization) {
+    console.log(appStatus);
+    if (appStatus != 'AVAILABLE') {
+        return {
+            status: 503,
+            message: 'Service Unavailable!',
+        };
+    } else if (!req.headers.authorization) {
         console.log('No token. User authentication failed!');
         return {
             status: 401,
@@ -295,6 +346,10 @@ async function authentication(req, res) {
     }
 }
 
+async function getAppStatus() {
+    appStatus = await oci.initializeOCI();
+}
+
 module.exports = {
     registerUser,
     loginUser,
@@ -302,4 +357,5 @@ module.exports = {
     updateUserDetails,
     deleteUserAccount,
     userTransaction,
+    getAppStatus,
 };

@@ -1,6 +1,6 @@
 # FinPay Server
 
-This is the server-side application for FinPay mobile app.
+This is the server-side application FinPay Server. The server is connected to Autonomous Database (ADB) available on Oracle Cloud Infrastructure (OCI). Once the server is running, it checks the status of ADB and if that is currently not available, then restarts the provisioned ADB.
 
 ## Basic Functionalities
 
@@ -20,14 +20,18 @@ To run this application on your location system, the following installations are
 
 1. Node.Js
 2. NPM Module
-3. Oracle DB
-4. Oracle Home (Instant Client or Oracle XE)
+3. Oracle Cloud Infrastructure (OCI) Subscription
+4. Oracle ADB (Pre-Provisioned)
+5. Oracle Home (Instant Client or Oracle XE)
+6. OCI SDK
 
 ---
 
 ## API Endpoints
 
 URL: `http://(localhost):(port)/api`
+
+> **Note:** If the Oracle ADB is not available for use, i.e. service is unavailable, kindly check the `Retry-After` header for the wait time.
 
 ### GET Method
 
