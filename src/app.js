@@ -2,8 +2,12 @@ const express = require('express');
 const fn = require('./fn');
 const os = require('os');
 const oci = require('../utils/oci');
-const authQ = require('../utils/authenticator');
-const QRCode = require('qrcode');
+const rateLimit = require('express-rate-limit');
+
+const limiter = new rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 5,
+});
 
 if (os.platform == 'win32') {
     const dotenv = require('dotenv').config();
@@ -12,7 +16,8 @@ if (os.platform == 'win32') {
 const app = express();
 const port = process.env.PORT || 3000;
 
-let token;
+// apply rate limiter to all requests
+app.use(limiter);
 
 // TODO: Log events of login, signup, and delete user
 
