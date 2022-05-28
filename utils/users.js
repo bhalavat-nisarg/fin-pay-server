@@ -176,6 +176,9 @@ async function searchUserAccount(username) {
                       , XFU.first_name
                       , XFU.username
                       , XFU.password
+                      , XFU.mfa
+                      , XFU.token
+                      , XFU.verified
                    FROM xxfin_users XFU
                   WHERE UPPER(XFU.username) = UPPER(TRIM(:1))`;
     const bind = [username];
@@ -259,6 +262,62 @@ async function updateUser(user) {
     }
 }
 
+async function enableMFA(user) {
+    let result;
+    let pool;
+    const poolStatus = await db.checkPoolStatus();
+    if (poolStatus === db.poolStatus.poolClosed) {
+        pool = await db.openPool();
+    } else {
+        pool = db.getPool();
+    }
+    console.log(user);
+
+    const sql = `UPDATE xxfin_users XFU 
+                    SET XFU.mfa = 'Y'
+                      , XFU.token = :1
+                      , XFU.last_updated_date = SYSDATE
+                  WHERE XFU.user_id = :2`;
+
+    const bind = [user.token, user.userId];
+
+    try {
+        result = await db.openConnection(pool, sql, bind);
+        return result.rows;
+    } catch (err) {
+        console.log(err, err.message);
+        return err;
+    }
+}
+
+async function deleteMFA(user) {
+    let result;
+    let pool;
+    const poolStatus = await db.checkPoolStatus();
+    if (poolStatus === db.poolStatus.poolClosed) {
+        pool = await db.openPool();
+    } else {
+        pool = db.getPool();
+    }
+    console.log(user);
+
+    const sql = `UPDATE xxfin_users XFU 
+                    SET XFU.mfa = 'N'
+                      , XFU.token = NULL
+                      , XFU.last_updated_date = SYSDATE
+                  WHERE XFU.user_id = :1`;
+
+    const bind = [user.userId];
+
+    try {
+        result = await db.openConnection(pool, sql, bind);
+        return result.rows;
+    } catch (err) {
+        console.log(err, err.message);
+        return err;
+    }
+}
+
 module.exports = {
     createUser,
     getAllUsers,
@@ -266,4 +325,6 @@ module.exports = {
     searchUserAccount,
     deleteUser,
     updateUser,
+    enableMFA,
+    deleteMFA,
 };

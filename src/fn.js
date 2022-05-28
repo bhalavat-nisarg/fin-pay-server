@@ -3,6 +3,8 @@ const txn = require('../utils/txn');
 const transform = require('../utils/transform');
 const bcrypt = require('bcrypt');
 const oci = require('../utils/oci');
+const authQ = require('../utils/authenticator');
+const QRCode = require('qrcode');
 
 const saltRounds = 10;
 let appStatus = 'STOPPED';
@@ -199,6 +201,118 @@ async function deleteUserAccount(req, res) {
     }
 }
 
+async function enable2FAfn(req, res) {
+    const auth = await authentication(req, res);
+    if (auth.status == 503) {
+        res.setHeader('Retry-After', '10');
+
+        res.status(auth.status).send({
+            status: auth.status,
+            message: auth.message,
+        });
+    } else if (auth.status != 200 && auth.status != 503) {
+        res.status(auth.status).send({
+            status: auth.status,
+            message: auth.message,
+        });
+    } else {
+        if (
+            req.body.enable2FA === 'Y' &&
+            auth.verified === 'Y' &&
+            auth.mfaFlag === 'N'
+        ) {
+            const val = await authQ.get2FACode();
+            await users.enableMFA({
+                userId: auth.userId,
+                token: transform.encodeText(val.base32),
+            });
+            await QRCode.toFileStream(res, val.otpAuthUrl);
+        } else if (req.body.enable2FA !== 'Y' || !req.body.enable2FA) {
+            res.status(403).send({
+                status: 403,
+                message: 'Multi-factor authentication flag is missing!',
+            });
+        } else if (auth.verified === 'N') {
+            res.status(400).send({
+                status: 400,
+                message: 'Account is not Verified!',
+            });
+        } else if (auth.mfaFlag === 'Y') {
+            res.status(403).send({
+                status: 403,
+                message: 'Multi-factor Authentication is already activated!',
+            });
+        }
+    }
+}
+
+async function verify2FAfn(req, res) {
+    const auth = await authentication(req, res);
+    if (auth.status == 503) {
+        res.setHeader('Retry-After', '10');
+
+        res.status(auth.status).send({
+            status: auth.status,
+            message: auth.message,
+        });
+    } else if (auth.status != 200 && auth.status != 503) {
+        res.status(auth.status).send({
+            status: auth.status,
+            message: auth.message,
+        });
+    } else {
+        if (req.body.token) {
+            const verified = await authQ.verify2FACode(
+                req.body.token,
+                transform.decodeText(auth.token)
+            );
+            console.log('Token Verified: ' + verified);
+            res.send({ status: 200, message: null, verified });
+        }
+    }
+}
+
+async function delete2FAfn(req, res) {
+    const auth = await authentication(req, res);
+    if (auth.status == 503) {
+        res.setHeader('Retry-After', '10');
+
+        res.status(auth.status).send({
+            status: auth.status,
+            message: auth.message,
+        });
+    } else if (auth.status != 200 && auth.status != 503) {
+        res.status(auth.status).send({
+            status: auth.status,
+            message: auth.message,
+        });
+    } else {
+        if (req.body.token) {
+            const verified = await authQ.verify2FACode(
+                req.body.token,
+                transform.decodeText(auth.token)
+            );
+            if (verified) {
+                const deleted = await users.deleteMFA({ userId: auth.userId });
+                if (deleted == undefined) {
+                    console.log('MFA deleted!');
+                    res.status(204).send();
+                } else {
+                    res.status(500).send({
+                        status: 500,
+                        message: 'Internal server error..',
+                    });
+                }
+            } else {
+                res.status(403).send({
+                    status: 403,
+                    message: 'MFA token invalid!',
+                });
+            }
+        }
+    }
+}
+
 async function userTransaction(req, res) {
     const targetId = req.body.targetId;
     const sourceId = req.body.sourceId;
@@ -295,6 +409,9 @@ async function checkUser(user, pass) {
                 firstName: resp[0].FIRST_NAME,
                 username: resp[0].USERNAME,
                 password: validUser,
+                mfaFlag: resp[0].MFA,
+                token: resp[0].TOKEN,
+                verified: resp[0].VERIFIED,
             };
         }
     }
@@ -303,6 +420,9 @@ async function checkUser(user, pass) {
         firstName: null,
         username: null,
         password: null,
+        mfaFlag: null,
+        token: null,
+        verified: null,
     };
 }
 
@@ -323,6 +443,13 @@ async function authentication(req, res) {
         const encoded = req.headers.authorization.replace('Basic ', '');
         const auth = transform.decodeToken(encoded);
         const authCred = await checkUser(auth.user, auth.pass);
+        let secretCode;
+        if (secretCode === null) {
+            secretCode = 'XXXXXX';
+        } else {
+            secretCode = transform.decodeText(authCred.token);
+        }
+        const userToken = await authQ.verify2FACode(req.body.token, secretCode);
         if (
             authCred.userId == 0 ||
             auth.user !== authCred.username ||
@@ -334,13 +461,32 @@ async function authentication(req, res) {
                 message:
                     'Authentication failed. Invalid Username or Password!!',
             };
-        } else {
-            console.log('User Authenticated');
+        } else if (authCred.mfaFlag === 'Y' && !userToken) {
+            return {
+                status: 401,
+                message: 'Authentication failed. Invalid MFA Token!!',
+            };
+        } else if (authCred.mfaFlag === 'Y' && userToken) {
+            console.log('User Authenticated with 2FA');
             return {
                 status: 200,
                 message: 'User Authenticated.',
                 userId: authCred.userId,
                 username: authCred.username,
+                mfaFlag: authCred.mfaFlag,
+                token: authCred.token,
+                verified: authCred.verified,
+            };
+        } else if (auth.user === authCred.username && authCred.password) {
+            console.log('User Authenticated without 2FA');
+            return {
+                status: 200,
+                message: 'User Authenticated.',
+                userId: authCred.userId,
+                username: authCred.username,
+                mfaFlag: authCred.mfaFlag,
+                token: authCred.token,
+                verified: authCred.verified,
             };
         }
     }
@@ -358,4 +504,7 @@ module.exports = {
     deleteUserAccount,
     userTransaction,
     getAppStatus,
+    enable2FAfn,
+    verify2FAfn,
+    delete2FAfn,
 };
