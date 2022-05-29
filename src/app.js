@@ -4,7 +4,7 @@ const os = require('os');
 const oci = require('../utils/oci');
 const rateLimit = require('express-rate-limit');
 
-const limiter = new rateLimit({
+const limiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
     max: 5,
 });
@@ -26,7 +26,7 @@ app.use(express.json());
 
 app.set('title', 'FinPay Server');
 
-app.post('/api/users/signup', fn.registerUser);
+app.post('/api/users/register', fn.registerUser);
 app.post('/api/users/login', fn.loginUser);
 app.post('/api/users/mfa', fn.enable2FAfn);
 app.post('/api/users/verify', fn.verify2FAfn);
