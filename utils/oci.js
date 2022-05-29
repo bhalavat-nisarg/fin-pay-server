@@ -1,12 +1,9 @@
 const { common, database } = require('oci-sdk');
-const os = require('os');
 const db = require('../utils/connection');
+const env = require('./env');
 
-if (os.platform == 'win32') {
-    const dotenv = require('dotenv').config();
-}
-const configurationFilePath = process.env.CONFIG_FILE_PATH;
-const dbId = process.env.ADB_OCID;
+const configurationFilePath = env.CONFIG_FILE_PATH;
+const dbId = env.ADB_OCID;
 
 let provider;
 

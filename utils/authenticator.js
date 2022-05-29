@@ -1,11 +1,11 @@
 const speakeasy = require('speakeasy');
-const QRCode = require('qrcode');
+const env = require('./env');
 
 async function get2FACode() {
-    console.log('2FA App: ', process.env.TWO_FACTOR_SECRET);
+    console.log('2FA App: ', env.TWO_FACTOR_SECRET);
 
     const secretCode = speakeasy.generateSecret({
-        name: process.env.TWO_FACTOR_SECRET,
+        name: env.TWO_FACTOR_SECRET,
     });
 
     return {

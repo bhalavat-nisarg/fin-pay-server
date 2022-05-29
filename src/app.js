@@ -1,20 +1,16 @@
 const express = require('express');
 const fn = require('./fn');
-const os = require('os');
 const oci = require('../utils/oci');
 const rateLimit = require('express-rate-limit');
+const env = require('../utils/env');
 
 const limiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
     max: 5,
 });
 
-if (os.platform == 'win32') {
-    const dotenv = require('dotenv').config();
-}
-
 const app = express();
-const port = process.env.PORT || 3000;
+const port = env.PORT || 3000;
 
 // apply rate limiter to all requests
 app.use(limiter);
