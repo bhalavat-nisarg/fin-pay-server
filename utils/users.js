@@ -1,4 +1,4 @@
-const db = require('./connection');
+const db = require('./oConnection');
 
 async function createUser(newUser) {
     let result;

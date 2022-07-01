@@ -1,5 +1,5 @@
 const { common, database } = require('oci-sdk');
-const db = require('../utils/connection');
+const db = require('./oConnection');
 const env = require('./env');
 
 const configurationFilePath = env.CONFIG_FILE_PATH;

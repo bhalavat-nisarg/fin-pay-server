@@ -3,6 +3,7 @@ const fn = require('./fn');
 const oci = require('../utils/oci');
 const rateLimit = require('express-rate-limit');
 const env = require('../utils/env');
+const os = require('os');
 
 const limiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
@@ -10,7 +11,7 @@ const limiter = rateLimit({
 });
 
 const app = express();
-const port = env.PORT || 3000;
+const port = env.app.PORT || 3000;
 
 // apply rate limiter to all requests
 app.use(limiter);
@@ -43,6 +44,11 @@ app.all('*', (req, res) => {
 
 app.listen(port, async () => {
     console.log('Server running on port: ' + port);
-    await oci.loadConfigFile();
-    fn.getAppStatus();
+    if (os.platform === 'win32') {
+        await oci.loadConfigFile();
+        fn.getAppStatus();
+    } else {
+        // TODO: add option for mysql and postgres
+        // TODO: add scripts to setup DB structure
+    }
 });

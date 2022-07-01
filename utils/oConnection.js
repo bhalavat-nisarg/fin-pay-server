@@ -33,9 +33,9 @@ async function initDB() {
 async function openPool() {
     try {
         const pool = await oracledb.createPool({
-            user: dbConfig.username,
-            password: dbConfig.password,
-            connectString: dbConfig.dbTxn,
+            user: dbConfig.oracle.username,
+            password: dbConfig.oracle.password,
+            connectString: dbConfig.oracle.dbTxn,
             poolAlias: poolNameDef,
             poolMax: 10,
             poolMin: 10,

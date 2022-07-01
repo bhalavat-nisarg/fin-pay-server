@@ -1,4 +1,4 @@
-const db = require('./connection');
+const db = require('./oConnection');
 
 async function loadMoney(txnObj) {
     let result;
