@@ -14,4 +14,6 @@ module.exports = {
     DB_CONN_HIGH: process.env.DB_CONN_HIGH,
     DB_CONN_MED: process.env.DB_CONN_MED,
     DB_CONN_TP: process.env.DB_CONN_TP,
+    APP_MODE: process.env.APP_MODE,
+    DB_URL: process.env.DB_URL,
 };
