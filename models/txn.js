@@ -1,4 +1,7 @@
-module.exports = {
+const mongoose = require('mongoose');
+const schema = mongoose.Schema;
+
+let txnSchema = new schema({
     txnId: Number, // Auto generate sequence
     gateway: String,
     method: String,
@@ -14,4 +17,6 @@ module.exports = {
     txn_event: String,
     creation_date: Date,
     created_by: String,
-};
+});
+
+module.exports = mongoose.model('txn', txnSchema);

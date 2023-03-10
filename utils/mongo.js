@@ -12,6 +12,15 @@ const collectionName = 'sales';
 const database = client.db(dbName);
 const collection = database.collection(collectionName);
 
+const connectToDatabase = async () => {
+    try {
+        await client.connect();
+        console.log(`Connected to the ${dbName} database.`);
+    } catch (err) {
+        console.error(`Error Connecting to the database: ${err}`);
+    }
+}
+
 
 async function searchVal() {
     console.log('Inside Search')
@@ -31,6 +40,14 @@ async function searchVal() {
 
 }
 
+const createUser = async (newUser) => {
+    const new_user = {
+        firstName: newUser.firstName,
+
+    }
+}
+
 module.exports = {
+    connectToDatabase,
     searchVal
 };
