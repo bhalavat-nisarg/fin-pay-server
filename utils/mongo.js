@@ -1,23 +1,33 @@
 const { MongoClient } = require('mongodb');
 const env = require('../utils/env');
+const users = require('../models/user')
 
 const client = new MongoClient(env.DB_URL);
 
-// const dbName = 'cloud';
-// const collectionName = 'users';
+const dbName = 'cloud';
+const collectionName = 'users';
 
-const dbName = 'mongodbVSCodePlaygroundDB'
-const collectionName = 'sales';
+// const dbName = 'mongodbVSCodePlaygroundDB'
+// const collectionName = 'sales';
 
 const database = client.db(dbName);
 const collection = database.collection(collectionName);
 
-const connectToDatabase = async () => {
+const openConnection = async () => {
     try {
         await client.connect();
         console.log(`Connected to the ${dbName} database.`);
     } catch (err) {
         console.error(`Error Connecting to the database: ${err}`);
+    }
+}
+
+const closeConnection = async () => {
+    try {
+        await client.close();
+        console.log(`Disconnected from the ${dbName} database.`);
+    } catch (err) {
+        console.error(`Error closing connection to the database: ${err}`);
     }
 }
 
@@ -40,14 +50,10 @@ async function searchVal() {
 
 }
 
-const createUser = async (newUser) => {
-    const new_user = {
-        firstName: newUser.firstName,
 
-    }
-}
 
 module.exports = {
-    connectToDatabase,
-    searchVal
+    openConnection,
+    collection,
+    closeConnection
 };

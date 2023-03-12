@@ -1,15 +1,22 @@
-const users = require('../utils/users');
 const txn = require('../utils/txn');
 const transform = require('../utils/transform');
 const bcrypt = require('bcrypt');
 const oci = require('../utils/oci');
 const authQ = require('../utils/authenticator');
 const QRCode = require('qrcode');
+const env = require('../utils/env');
+
+// if (env.APP_MODE == 0) {
+//     const users = require('../utils/users');
+// } else {
+//     const users = require('../utils/mongoFn');
+// }
+
 
 const saltRounds = 10;
 let appStatus = 'STOPPED';
 
-async function registerUser(req, res) {
+async function registerUser (req, res) {
     let out;
     console.log(appStatus);
     if (appStatus != 'AVAILABLE') {
@@ -31,10 +38,10 @@ async function registerUser(req, res) {
             currency: 'INR',
         });
     }
-    res.status(out.status).send({ status: out.status, message: out.message });
+    res.status(out.status).send({status: out.status, message: out.message});
 }
 
-async function loginUser(req, res) {
+async function loginUser (req, res) {
     const auth = await authentication(req, res);
 
     if (auth.status == 503) {
@@ -59,7 +66,7 @@ async function loginUser(req, res) {
     }
 }
 
-async function getUsers(req, res) {
+async function getUsers (req, res) {
     const id = req.params.id || req.query.userId;
     const username = req.query.username;
     const email = req.query.email;
@@ -123,7 +130,7 @@ async function getUsers(req, res) {
     }
 }
 
-async function updateUserDetails(req, res) {
+async function updateUserDetails (req, res) {
     const id = req.params.id;
     const auth = await authentication(req, res);
     if (auth.status == 503) {
@@ -166,7 +173,7 @@ async function updateUserDetails(req, res) {
     }
 }
 
-async function deleteUserAccount(req, res) {
+async function deleteUserAccount (req, res) {
     const user_id = req.params.id;
     const auth = await authentication(req, res);
     if (auth.status == 503) {
@@ -201,7 +208,7 @@ async function deleteUserAccount(req, res) {
     }
 }
 
-async function enable2FAfn(req, res) {
+async function enable2FAfn (req, res) {
     const auth = await authentication(req, res);
     if (auth.status == 503) {
         res.setHeader('Retry-After', '10');
@@ -246,7 +253,7 @@ async function enable2FAfn(req, res) {
     }
 }
 
-async function verify2FAfn(req, res) {
+async function verify2FAfn (req, res) {
     const auth = await authentication(req, res);
     if (auth.status == 503) {
         res.setHeader('Retry-After', '10');
@@ -267,12 +274,12 @@ async function verify2FAfn(req, res) {
                 transform.decodeText(auth.token)
             );
             console.log('Token Verified: ' + verified);
-            res.send({ status: 200, message: null, verified });
+            res.send({status: 200, message: null, verified});
         }
     }
 }
 
-async function delete2FAfn(req, res) {
+async function delete2FAfn (req, res) {
     const auth = await authentication(req, res);
     if (auth.status == 503) {
         res.setHeader('Retry-After', '10');
@@ -293,7 +300,7 @@ async function delete2FAfn(req, res) {
                 transform.decodeText(auth.token)
             );
             if (verified) {
-                const deleted = await users.deleteMFA({ userId: auth.userId });
+                const deleted = await users.deleteMFA({userId: auth.userId});
                 if (deleted == undefined) {
                     console.log('MFA deleted!');
                     res.status(204).send();
@@ -313,7 +320,7 @@ async function delete2FAfn(req, res) {
     }
 }
 
-async function userTransaction(req, res) {
+async function userTransaction (req, res) {
     const targetId = req.body.targetId;
     const sourceId = req.body.sourceId;
     const currency = req.body.currency;
@@ -394,7 +401,7 @@ async function userTransaction(req, res) {
     }
 }
 
-async function checkUser(user, pass) {
+async function checkUser (user, pass) {
     console.log('search using user credentials');
     const resp = await users.searchUserAccount(user);
 
@@ -426,7 +433,7 @@ async function checkUser(user, pass) {
     };
 }
 
-async function authentication(req, res) {
+async function authentication (req, res) {
     console.log(appStatus);
     if (appStatus != 'AVAILABLE') {
         return {
@@ -492,7 +499,7 @@ async function authentication(req, res) {
     }
 }
 
-async function getAppStatus() {
+async function getAppStatus () {
     appStatus = await oci.initializeOCI();
 }
 

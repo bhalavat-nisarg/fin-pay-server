@@ -3,7 +3,8 @@ const fn = require('./fn');
 const oci = require('../utils/oci');
 const rateLimit = require('express-rate-limit');
 const env = require('../utils/env');
-const mongo = require('../utils/mongo')
+const mongo = require('../utils/mongo');
+const mongoFn = require('../utils/mongoFn');
 
 const limiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
@@ -26,7 +27,14 @@ app.use(express.json());
 app.set('title', 'FinPay Server');
 
 // Mode = 1 // NoSQL Database (MongoDB)
-
+app.post('/api/users/register', async (req, res) => {
+    let out;
+    console.log(req.body.user);
+    out = await mongoFn.getUser(req.body.user);
+    // console.log(out);
+    res.status(202).send({ out });
+    // res.status(202).send({ status: out.status, message: out.message });
+});
 
 // // Mode = 0 //   SQL Database (Oracle ADB)
 // app.post('/api/users/register', fn.registerUser);
@@ -52,11 +60,23 @@ app.all('*', (req, res) => {
 app.listen(port, async () => {
     console.log('Server running on port: ' + port);
     console.log('App Mode: ' + mode);
-    await mongo.searchVal()
-    // if (mode === 0) {
-    //     await oci.loadConfigFile();
-    //     fn.getAppStatus();
-    // } else {
-    //     mongo;
-    // }
+    // console.time('Running');
+    // await mongo.connectToDatabase();
+    // await mongo.createUser({
+    //     firstName: 'F2',
+    //     lastName: 'L',
+    //     email: 'E',
+    //     mobile: 'M',
+    //     username: 'U',
+    //     password: 'P',
+    //     currency: 'RR'
+    // })
+
+    // console.timeEnd('Running')
+    if (mode === 0) {
+        await oci.loadConfigFile();
+        fn.getAppStatus();
+    } else {
+        mongo.openConnection();
+    }
 });

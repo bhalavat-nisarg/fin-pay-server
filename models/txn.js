@@ -2,21 +2,21 @@ const mongoose = require('mongoose');
 const schema = mongoose.Schema;
 
 let txnSchema = new schema({
-    txnId: Number, // Auto generate sequence
-    gateway: String,
-    method: String,
-    description: String,
-    metadata: Object,
-    status: String,
-    error_msg: String,
-    amount: Number,
-    currency: String,
-    auth_id: String,
-    source_id: Number,
-    target_id: Number,
-    txn_event: String,
-    creation_date: Date,
-    created_by: String,
+    _id: { type: schema.Types.ObjectId },
+    gateway: { type: String },
+    method: { type: String },
+    description: { type: String },
+    metadata: { type: Object },
+    status: { type: String },
+    error_msg: { type: String },
+    amount: { type: Number, min: 0.0 },
+    currency: { type: String, enum: ['USD', 'INR', 'CAD'] },
+    auth_id: { type: schema.Types.ObjectId },
+    source_id: { type: schema.Types.ObjectId },
+    target_id: { type: schema.Types.ObjectId },
+    txn_event: { type: String },
+    creation_date: { type: Date, default: Date.now() },
+    created_by: { type: String, default: Date.now() },
 });
 
 module.exports = mongoose.model('txn', txnSchema);

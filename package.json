@@ -23,6 +23,7 @@
         "speakeasy": "^2.0.0"
     },
     "devDependencies": {
+        "@types/node": "^18.15.0",
         "dotenv": "^16.0.0",
         "nodemon": "^2.0.20"
     }
