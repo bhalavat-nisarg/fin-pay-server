@@ -6,11 +6,11 @@ const authQ = require('../utils/authenticator');
 const QRCode = require('qrcode');
 const env = require('../utils/env');
 
-// if (env.APP_MODE == 0) {
-//     const users = require('../utils/users');
-// } else {
-//     const users = require('../utils/mongoFn');
-// }
+if (env.APP_MODE == 0) {
+    const users = require('../utils/users');
+} else {
+    const users = require('../utils/mongoFn');
+}
 
 
 const saltRounds = 10;
@@ -35,10 +35,10 @@ async function registerUser (req, res) {
             password: hashPass,
             email: req.body.user.email,
             mobile: req.body.user.mobile,
-            currency: 'INR',
+            currency: 'USD',
         });
     }
-    res.status(out.status).send({status: out.status, message: out.message});
+    res.status(out.status).send({ status: out.status, message: out.message });
 }
 
 async function loginUser (req, res) {
@@ -67,7 +67,7 @@ async function loginUser (req, res) {
 }
 
 async function getUsers (req, res) {
-    const id = req.params.id || req.query.userId;
+    const id = req.params._id || req.query.userId;
     const username = req.query.username;
     const email = req.query.email;
     const mobile = req.query.mobile;
@@ -95,7 +95,7 @@ async function getUsers (req, res) {
                 username: username,
                 email: email,
                 mobile: mobile,
-                id: id,
+                _id: id,
             };
             resp = await users.getUser(user);
             if (total) {
@@ -131,7 +131,7 @@ async function getUsers (req, res) {
 }
 
 async function updateUserDetails (req, res) {
-    const id = req.params.id;
+    const id = req.params._id;
     const auth = await authentication(req, res);
     if (auth.status == 503) {
         res.setHeader('Retry-After', '10');
@@ -151,7 +151,7 @@ async function updateUserDetails (req, res) {
             lastName: req.body.lastName || '#NULL',
             email: req.body.email || '#NULL',
             mobile: req.body.mobile || '#NULL',
-            id: id,
+            _id: id,
             username: auth.username,
         };
         console.log('Updating the user details..');
@@ -174,7 +174,7 @@ async function updateUserDetails (req, res) {
 }
 
 async function deleteUserAccount (req, res) {
-    const user_id = req.params.id;
+    const user_id = req.params._id;
     const auth = await authentication(req, res);
     if (auth.status == 503) {
         res.setHeader('Retry-After', '10');
@@ -230,7 +230,7 @@ async function enable2FAfn (req, res) {
         ) {
             const val = await authQ.get2FACode();
             await users.enableMFA({
-                userId: auth.userId,
+                _Id: auth.userId,
                 token: transform.encodeText(val.base32),
             });
             await QRCode.toFileStream(res, val.otpAuthUrl);
@@ -274,7 +274,7 @@ async function verify2FAfn (req, res) {
                 transform.decodeText(auth.token)
             );
             console.log('Token Verified: ' + verified);
-            res.send({status: 200, message: null, verified});
+            res.send({ status: 200, message: null, verified });
         }
     }
 }
@@ -300,7 +300,7 @@ async function delete2FAfn (req, res) {
                 transform.decodeText(auth.token)
             );
             if (verified) {
-                const deleted = await users.deleteMFA({userId: auth.userId});
+                const deleted = await users.deleteMFA({ userId: auth.userId });
                 if (deleted == undefined) {
                     console.log('MFA deleted!');
                     res.status(204).send();

@@ -27,28 +27,28 @@ app.use(express.json());
 app.set('title', 'FinPay Server');
 
 // Mode = 1 // NoSQL Database (MongoDB)
-app.post('/api/users/register', async (req, res) => {
-    let out;
-    console.log(req.body.user);
-    out = await mongoFn.getUser(req.body.user);
-    // console.log(out);
-    res.status(202).send({ out });
-    // res.status(202).send({ status: out.status, message: out.message });
-});
+// app.post('/api/users/register', async (req, res) => {
+//     let out;
+//     console.log(req.body.user);
+//     out = await mongoFn.getUser(req.body.user);
+//     // console.log(out);
+//     res.status(202).send({ out });
+//     // res.status(202).send({ status: out.status, message: out.message });
+// });
 
-// // Mode = 0 //   SQL Database (Oracle ADB)
-// app.post('/api/users/register', fn.registerUser);
-// app.post('/api/users/login', fn.loginUser);
-// app.post('/api/users/mfa', fn.enable2FAfn);
-// app.post('/api/users/verify', fn.verify2FAfn);
 
-// app.patch('/api/users/:id', fn.updateUserDetails);
+app.post('/api/users/register', fn.registerUser);
+app.post('/api/users/login', fn.loginUser);
+app.post('/api/users/mfa', fn.enable2FAfn);
+app.post('/api/users/verify', fn.verify2FAfn);
 
-// app.delete('/api/users/mfa', fn.delete2FAfn);
-// app.delete('/api/users/:id', fn.deleteUserAccount);
+app.patch('/api/users/:id', fn.updateUserDetails);
 
-// app.get('/api/users/:id', fn.getUsers);
-// app.get('/api/users', fn.getUsers);
+app.delete('/api/users/mfa', fn.delete2FAfn);
+app.delete('/api/users/:id', fn.deleteUserAccount);
+
+app.get('/api/users/:id', fn.getUsers);
+app.get('/api/users', fn.getUsers);
 
 // app.post('/api/txn/exchange', fn.userTransaction);
 
@@ -60,19 +60,7 @@ app.all('*', (req, res) => {
 app.listen(port, async () => {
     console.log('Server running on port: ' + port);
     console.log('App Mode: ' + mode);
-    // console.time('Running');
-    // await mongo.connectToDatabase();
-    // await mongo.createUser({
-    //     firstName: 'F2',
-    //     lastName: 'L',
-    //     email: 'E',
-    //     mobile: 'M',
-    //     username: 'U',
-    //     password: 'P',
-    //     currency: 'RR'
-    // })
 
-    // console.timeEnd('Running')
     if (mode === 0) {
         await oci.loadConfigFile();
         fn.getAppStatus();

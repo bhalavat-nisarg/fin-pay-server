@@ -93,10 +93,16 @@ const getAllUsers = async () => {
 };
 
 const getUser = async (user) => {
-    let query = { $or: [{ _id: user.id }, { username: user.username }, { email: user.email }, { mobile: user.mobile }] };
+    let query = {
+        $or: [
+            { _id: user.id },
+            { username: user.username },
+            { email: user.email },
+            { mobile: user.mobile }
+        ]
+    };
     try {
         let result = await collection.findOne(query);
-        // const output = await result.toArray();
         return result;
     } catch (err) {
         console.error(err, err.message);
@@ -104,8 +110,115 @@ const getUser = async (user) => {
     }
 };
 
+const searchUserAccount = async (username) => {
+    let query = { username: username };
+    try {
+        let result = await collection.findOne(query);
+        return result;
+    } catch (err) {
+        console.error(err, err.message);
+        return err;
+    }
+};
+
+const deleteUser = async (id) => {
+    let query = { _id: id };
+    try {
+        let result = await collection.findOneAndDelete(query);
+        return result;
+    } catch (err) {
+        console.error(err, err.message);
+        return err;
+    }
+};
+
+const updateUser = async (updateUser) => {
+    let query = { _id: _id };
+    let mobile_verified;
+    let email_verified;
+
+    try {
+        let user = await collection.findOne(query);
+        if (updateUser.email !== user.email) {
+            email_verified = 'N';
+        } else {
+            email_verified = user.emailVerified;
+        }
+
+        if (updateUser.mobile !== user.mobile) {
+            mobile_verified = 'N';
+        } else {
+            mobile_verified = user.mobileVerified;
+        }
+
+
+        let result = await collection.updateOne(query, {
+            $set: {
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                mobile: user.mobile,
+                currency: currency,
+                emailVerified: email_verified,
+                mobileVerified: mobile_verified,
+                username: user.username,
+                lastUpdateDate: new Date(),
+            }
+        });
+        return result;
+    } catch (err) {
+        console.error(err, err.message);
+        return err;
+    }
+};
+
+const enableMFA = async (userMFA) => {
+    let query = { _id: userMFA._id };
+
+    try {
+        let result = await collection.updateOne(query, {
+            $set: {
+                mfa: 'Y',
+                token: userMFA.token,
+                lastUpdateDate: new Date(),
+            }
+        });
+        return result;
+
+    } catch (err) {
+        console.error(err, err.message);
+        return err;
+    }
+
+};
+
+const deleteMFA = async (userMFA) => {
+    let query = { _id: userMFA._id };
+
+    try {
+        let result = await collection.updateOne(query, {
+            $set: {
+                mfa: 'N',
+                token: null,
+                lastUpdateDate: new Date(),
+            }
+        });
+        return result;
+
+    } catch (err) {
+        console.error(err, err.message);
+        return err;
+    }
+
+};
+
 module.exports = {
     createUser,
     getAllUsers,
-    getUser
+    getUser,
+    searchUserAccount,
+    deleteUser,
+    updateUser,
+    enableMFA,
+    deleteMFA
 };
