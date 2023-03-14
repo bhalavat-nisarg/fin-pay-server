@@ -13,7 +13,7 @@ let userSchema = new schema({
     verified: { type: String, default: 'N' },
     mobileVerified: { type: String, default: 'N' },
     emailVerified: { type: String, default: 'N' },
-    balance: { type: Double, default: 0.00 },
+    balance: { type: Number, default: 0.00 },
     creationDate: { type: Date, default: Date.now() },
     lastUpdateDate: { type: Date, default: Date.now() },
 });

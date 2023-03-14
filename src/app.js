@@ -50,7 +50,7 @@ app.delete('/api/users/:id', fn.deleteUserAccount);
 app.get('/api/users/:id', fn.getUsers);
 app.get('/api/users', fn.getUsers);
 
-// app.post('/api/txn/exchange', fn.userTransaction);
+app.post('/api/txn/exchange', fn.userTransaction);
 
 
 app.all('*', (req, res) => {
