@@ -23,9 +23,9 @@ To run this application on your location system, the following installations are
 1. Node.Js
 2. NPM Module
 3. Oracle Cloud Infrastructure (Free Tier)
-4. Oracle ADB (Free Tier)
-5. Oracle Home (Instant Client or Oracle XE)
-6. OCI SDK
+4. Oracle ADB (Free Tier) or MongoDB
+5. Oracle Home (Instant Client or Oracle XE) (Optional for NoSQL)
+6. OCI SDK (Optional for NoSQL)
 7. Google Authenticator (Optional)
 
 ---
@@ -52,15 +52,16 @@ URL: `http://(localhost):(port)/api`
 
 **Query Parameters:**
 
-| Key         | Value                | Description            |
-| ----------- | -------------------- | ---------------------- |
-| id          | 15                   | user's unique user id  |
-| username    | user52               | registered username    |
-| email       | dummy15@invalid.com  | registered email id    |
-| mobile      | 5255555555           | registered mobile no   |
-| totalResults| True                 | total count of records |
+| Key          | Value               | Description            |
+| ------------ | ------------------- | ---------------------- |
+| id           | 15                  | user's unique user id  |
+| username     | user52              | registered username    |
+| email        | dummy15@invalid.com | registered email id    |
+| mobile       | 5255555555          | registered mobile no   |
+| totalResults | True                | total count of records |
 
 **Request Sample: (If MFA is enabled)**
+
 <pre>
 {
     "enable2FA": "Y"
@@ -68,6 +69,7 @@ URL: `http://(localhost):(port)/api`
 </pre>
 
 **Response Sample:**
+
 <pre>
 {
     "status": 200,
@@ -99,6 +101,7 @@ URL: `http://(localhost):(port)/api`
 **Authorization:** Basic Auth (Username & Password) and MFA Token (Optional)
 
 **Request Sample: (MFA Enabled)**
+
 <pre>
 {
     "token": 719625
@@ -106,11 +109,13 @@ URL: `http://(localhost):(port)/api`
 </pre>
 
 **Request Sample: (MFA Not-Enabled)**
+
 <pre>
 {}
 </pre>
 
 **Response Sample:**
+
 <pre>
 {
     "status": 200,
@@ -126,6 +131,7 @@ URL: `http://(localhost):(port)/api`
 **Authorization:** None
 
 **Request Sample:**
+
 <pre>
 {
     "user": {
@@ -140,6 +146,7 @@ URL: `http://(localhost):(port)/api`
 </pre>
 
 **Response Sample:**
+
 <pre>
 {
     "status": 201,
@@ -155,6 +162,7 @@ URL: `http://(localhost):(port)/api`
 **Authorization:** Basic Auth (Username & Password)
 
 **Request Sample:**
+
 <pre>
 {
     "enable2FA": "Y"
@@ -162,6 +170,7 @@ URL: `http://(localhost):(port)/api`
 </pre>
 
 **Response Sample:**
+
 <pre>
 QR Code will be sent as a file stream.
 </pre>
@@ -173,6 +182,7 @@ QR Code will be sent as a file stream.
 **Authorization:** Basic Auth (Username & Password)
 
 **Request Sample:**
+
 <pre>
 {
     "token": 740875
@@ -180,6 +190,7 @@ QR Code will be sent as a file stream.
 </pre>
 
 **Response Sample:**
+
 <pre>
 {
     "status": 200,
@@ -199,6 +210,7 @@ QR Code will be sent as a file stream.
 **Authorization:** Basic Auth (Username & Password) and MFA Token (Optional)
 
 **Request Sample:** Deposit/Withdraw
+
 <pre>
 {
     "sourceId": 15,
@@ -213,6 +225,7 @@ QR Code will be sent as a file stream.
 </pre>
 
 **Request Sample:** P2P
+
 <pre>
 {
     "sourceId": 15,
@@ -227,6 +240,7 @@ QR Code will be sent as a file stream.
 </pre>
 
 **Response Sample:**
+
 <pre>
 {
     "status": 200,
@@ -243,6 +257,7 @@ QR Code will be sent as a file stream.
 **Authorization:** Basic Auth (Username & Password) and MFA Token (Optional)
 
 **Request Sample:**
+
 <pre>
 {
     "lastName": "52",
@@ -251,6 +266,7 @@ QR Code will be sent as a file stream.
 </pre>
 
 **Response Sample:**
+
 <pre>
 {
     "status": 200,
@@ -267,6 +283,7 @@ QR Code will be sent as a file stream.
 **Authorization:** Basic Auth (Username & Password) and MFA Token
 
 **Request Sample:**
+
 <pre>
 {
     "token": 740875
