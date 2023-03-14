@@ -1,6 +1,6 @@
 const mongo = require('./mongo');
 
-const collection = mongo.collection;
+const collection = mongo.collectionUser;
 
 const createUser = async (newUser) => {
 
@@ -14,6 +14,7 @@ const createUser = async (newUser) => {
         verified: 'N',
         mobileVerified: 'N',
         emailVerified: 'N',
+        balance: 0.00,
         currency: newUser.currency,
         creationDate: new Date(),
         lastUpdateDate: new Date()
@@ -152,7 +153,7 @@ const updateUser = async (updateUser) => {
         }
 
 
-        let result = await collection.updateOne(query, {
+        let result = await collection.findOneAndUpdate(query, {
             $set: {
                 firstName: user.firstName,
                 lastName: user.lastName,
@@ -176,7 +177,7 @@ const enableMFA = async (userMFA) => {
     let query = { _id: userMFA._id };
 
     try {
-        let result = await collection.updateOne(query, {
+        let result = await collection.findOneAndUpdate(query, {
             $set: {
                 mfa: 'Y',
                 token: userMFA.token,
@@ -196,7 +197,7 @@ const deleteMFA = async (userMFA) => {
     let query = { _id: userMFA._id };
 
     try {
-        let result = await collection.updateOne(query, {
+        let result = await collection.findOneAndUpdate(query, {
             $set: {
                 mfa: 'N',
                 token: null,

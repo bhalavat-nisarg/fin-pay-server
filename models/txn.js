@@ -16,7 +16,7 @@ let txnSchema = new schema({
     target_id: { type: schema.Types.ObjectId },
     txn_event: { type: String },
     creation_date: { type: Date, default: Date.now() },
-    created_by: { type: String, default: Date.now() },
+    created_by: { type: String },
 });
 
 module.exports = mongoose.model('txn', txnSchema);
