@@ -1,4 +1,3 @@
-const txn = require('../utils/txn');
 const transform = require('../utils/transform');
 const bcrypt = require('bcrypt');
 const oci = require('../utils/oci');
@@ -6,15 +5,19 @@ const authQ = require('../utils/authenticator');
 const QRCode = require('qrcode');
 const env = require('../utils/env');
 
+let appStatus = 'STOPPED';
+
 if (env.APP_MODE == 0) {
-    const users = require('../utils/users');
+    // const users = require('../utils/users');
+    appStatus = 'STOPPED';
 } else {
-    const users = require('../utils/mongoFn');
+    appStatus = 'AVAILABLE';
 }
 
+const users = require('../utils/mongoFn');
+const txn = require('../utils/mongoTxn');
 
 const saltRounds = 10;
-let appStatus = 'STOPPED';
 
 async function registerUser (req, res) {
     let out;
@@ -385,10 +388,10 @@ async function userTransaction (req, res) {
                 message: 'Amount transfer successful!',
             });
         } else {
-            console.log('error: ' + resp);
-            res.status(403).send({
-                status: 403,
-                message: resp,
+            console.log('ERROR: ' + resp.message);
+            res.status(resp.status).send({
+                status: resp.status,
+                message: resp.message,
             });
         }
     } else {
@@ -404,21 +407,21 @@ async function userTransaction (req, res) {
 async function checkUser (user, pass) {
     console.log('search using user credentials');
     const resp = await users.searchUserAccount(user);
+    console.log(resp);
 
-    const cnt = Object.keys(resp).length;
-    if (cnt > 0) {
-        const hashPass = resp[0].PASSWORD;
+    if (resp != null) {
+        const hashPass = resp.password;
         const validUser = await bcrypt.compare(pass, hashPass);
 
         if (validUser) {
             return {
-                userId: resp[0].USER_ID,
-                firstName: resp[0].FIRST_NAME,
-                username: resp[0].USERNAME,
+                userId: resp._id,
+                firstName: resp.firstName,
+                username: resp.username,
                 password: validUser,
-                mfaFlag: resp[0].MFA,
-                token: resp[0].TOKEN,
-                verified: resp[0].VERIFIED,
+                mfaFlag: resp.mfa,
+                token: resp.token,
+                verified: resp.verified,
             };
         }
     }
@@ -428,7 +431,7 @@ async function checkUser (user, pass) {
         username: null,
         password: null,
         mfaFlag: null,
-        token: null,
+        token: '',
         verified: null,
     };
 }

@@ -1,4 +1,3 @@
-const { Double } = require('mongodb');
 const mongoose = require('mongoose');
 const schema = mongoose.Schema;
 
@@ -14,6 +13,9 @@ let userSchema = new schema({
     mobileVerified: { type: String, default: 'N' },
     emailVerified: { type: String, default: 'N' },
     balance: { type: Number, default: 0.00 },
+    mfa: { type: String, default: 'N' },
+    token: { type: String, default: null },
+    currency: { type: String, enum: ['USD', 'INR', 'CAD'] },
     creationDate: { type: Date, default: Date.now() },
     lastUpdateDate: { type: Date, default: Date.now() },
 });

@@ -4,7 +4,7 @@ const collectionTxn = mongo.collectionTxn;
 const collectionUser = mongo.collectionUser;
 
 const loadMoney = async (txnObj) => {
-    let query = { _id: txnObj.sourceId };
+    let query = { _id: new mongo.ObjectId(txnObj.sourceId) };
     let response;
 
     if (txnObj.mode.toUpperCase() === 'DEPOSIT') {
@@ -29,35 +29,46 @@ const loadMoney = async (txnObj) => {
 
             return response = {
                 status: 400,
-                message: `The minimum deposit is ${txnObj.currency} 25!`,
+                message: `The minimum deposit amount is ${txnObj.currency} 25!`,
             };
         }
 
         try {
-            let result = await collectionUser.findOneAndUpdate(
+            let user = await collectionUser.findOne(query);
+
+            console.log('Printing user', user);
+
+            let result = await collectionUser.updateOne(
                 query,
-                { $inc: { 'balance': txnObj.amount } },
-                { returnNewDocument: true }
+                { $set: { 'balance': user.balance + txnObj.amount } }
             );
+            console.log('Inside Deposit update..');
 
-            collectionTxn.insertOne({
-                gateway: 'FinPay',
-                method: 'default',
-                description: null,
-                metadata: {},
-                status: 'S',
-                error_msg: null,
-                amount: txnObj.amount,
-                currency: txnObj.currency,
-                auth_id: null,
-                source_id: txnObj.sourceId,
-                target_id: txnObj.targetId,
-                txn_event: 'DEPOSIT',
-                creation_date: new Date(),
-                created_by: txnObj.sourceId
-            });
+            console.log(result);
+            if (result.modifiedCount === 1) {
 
-            return result;
+                collectionTxn.insertOne({
+                    gateway: 'FinPay',
+                    method: 'default',
+                    description: null,
+                    metadata: {},
+                    status: 'S',
+                    error_msg: null,
+                    amount: txnObj.amount,
+                    currency: txnObj.currency,
+                    auth_id: null,
+                    source_id: txnObj.sourceId,
+                    target_id: txnObj.targetId,
+                    txn_event: 'DEPOSIT',
+                    creation_date: new Date(),
+                    created_by: txnObj.sourceId
+                });
+
+                return null;
+            } else {
+                throw new Error('Error: User not found!');
+            }
+
 
         } catch (err) {
             console.error(err, err.message);
@@ -84,7 +95,7 @@ const loadMoney = async (txnObj) => {
         let user;
 
         try {
-            user = await collectionUser.findOne({ _id: txnObj.sourceId });
+            user = await collectionUser.findOne(query);
         } catch (err) {
             console.error(err, err.message);
             return err;

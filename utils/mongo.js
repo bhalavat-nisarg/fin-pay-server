@@ -1,4 +1,4 @@
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 const env = require('../utils/env');
 const users = require('../models/user');
 
@@ -36,5 +36,6 @@ module.exports = {
     openConnection,
     collectionUser,
     collectionTxn,
-    closeConnection
+    closeConnection,
+    ObjectId
 };

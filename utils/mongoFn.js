@@ -14,7 +14,9 @@ const createUser = async (newUser) => {
         verified: 'N',
         mobileVerified: 'N',
         emailVerified: 'N',
-        balance: 0.00,
+        balance: 0,
+        mfa: 'N',
+        token: '',
         currency: newUser.currency,
         creationDate: new Date(),
         lastUpdateDate: new Date()
@@ -111,10 +113,11 @@ const getUser = async (user) => {
     }
 };
 
-const searchUserAccount = async (username) => {
-    let query = { username: username };
+const searchUserAccount = async (user) => {
+    let query = { username: user };
     try {
         let result = await collection.findOne(query);
+        console.log('LOGGING: ' + result);
         return result;
     } catch (err) {
         console.error(err, err.message);
