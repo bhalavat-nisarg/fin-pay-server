@@ -127,30 +127,35 @@ const loadMoney = async (txnObj) => {
         }
 
         try {
-            let result = await collectionUser.findOneAndUpdate(
+            let result = await collectionUser.updateOne(
                 query,
-                { $inc: { 'balance': -txnObj.amount } },
-                { returnNewDocument: true }
+                { $set: { 'balance': user.balance - txnObj.amount } }
             );
 
-            collectionTxn.insertOne({
-                gateway: 'FinPay',
-                method: 'default',
-                description: null,
-                metadata: {},
-                status: 'S',
-                error_msg: null,
-                amount: txnObj.amount,
-                currency: txnObj.currency,
-                auth_id: null,
-                source_id: txnObj.sourceId,
-                target_id: txnObj.targetId,
-                txn_event: 'WITHDRAW',
-                creation_date: new Date(),
-                created_by: txnObj.sourceId
-            });
+            if (result.modifiedCount > 0) {
+                collectionTxn.insertOne({
+                    gateway: 'FinPay',
+                    method: 'default',
+                    description: null,
+                    metadata: {},
+                    status: 'S',
+                    error_msg: null,
+                    amount: txnObj.amount,
+                    currency: txnObj.currency,
+                    auth_id: null,
+                    source_id: txnObj.sourceId,
+                    target_id: txnObj.targetId,
+                    txn_event: 'WITHDRAW',
+                    creation_date: new Date(),
+                    created_by: txnObj.sourceId
+                });
 
-            return result;
+                return null;
+
+            } else {
+                throw new Error('Error: Withdrawal transaction failed!');
+            }
+
 
         } catch (err) {
             console.error(err, err.message);
@@ -174,16 +179,20 @@ const loadMoney = async (txnObj) => {
             return err;
         }
     } else if (txnObj.mode.toUpperCase() === 'P2P') {
-        let user;
+        let sourceUser;
+        let targetUser;
 
         try {
-            user = await collectionUser.findOne({ _id: txnObj.sourceId });
+            sourceUser = await collectionUser.findOne(query);
+            targetUser = await collectionUser.findOne(
+                { _id: new mongo.ObjectId(txnObj.targetId) }
+            );
         } catch (err) {
             console.error(err, err.message);
             return err;
         }
 
-        if (txnObj.amount < user.balance) {
+        if (txnObj.amount < sourceUser.balance) {
 
             collectionTxn.insertOne({
                 gateway: 'FinPay',
@@ -191,7 +200,7 @@ const loadMoney = async (txnObj) => {
                 description: null,
                 metadata: {},
                 status: 'E',
-                error_msg: `Insufficient Balance!`,
+                error_msg: `Insufficient Balance in Source Account!`,
                 amount: txnObj.amount,
                 currency: txnObj.currency,
                 auth_id: null,
@@ -209,36 +218,38 @@ const loadMoney = async (txnObj) => {
         }
 
         try {
-            let source = await collectionUser.findOneAndUpdate(
+            let source = await collectionUser.updateOne(
                 query,
-                { $inc: { 'balance': -txnObj.amount } },
-                { returnNewDocument: true }
+                { $set: { 'balance': sourceUser.balance - txnObj.amount } }
             );
 
-            let target = await collectionUser.findOneAndUpdate(
-                query,
-                { $inc: { 'balance': txnObj.amount } },
-                { returnNewDocument: true }
+            let target = await collectionUser.updateOne(
+                { _id: new mongo.ObjectId(txnObj.targetId) },
+                { $set: { 'balance': targetUser.balance + txnObj.amount } }
             );
 
-            collectionTxn.insertOne({
-                gateway: 'FinPay',
-                method: 'default',
-                description: null,
-                metadata: {},
-                status: 'S',
-                error_msg: null,
-                amount: txnObj.amount,
-                currency: txnObj.currency,
-                auth_id: null,
-                source_id: txnObj.sourceId,
-                target_id: txnObj.targetId,
-                txn_event: 'P2P',
-                creation_date: new Date(),
-                created_by: txnObj.sourceId
-            });
+            if (source.modifiedCount > 0 && target.modifiedCount > 0) {
+                collectionTxn.insertOne({
+                    gateway: 'FinPay',
+                    method: 'default',
+                    description: null,
+                    metadata: {},
+                    status: 'S',
+                    error_msg: null,
+                    amount: txnObj.amount,
+                    currency: txnObj.currency,
+                    auth_id: null,
+                    source_id: txnObj.sourceId,
+                    target_id: txnObj.targetId,
+                    txn_event: 'P2P',
+                    creation_date: new Date(),
+                    created_by: txnObj.sourceId
+                });
 
-            return { source_txn: source, target_txn: target };
+                return null;
+            } else if (source.matchedCount === 0 || target.modifiedCount == 0) {
+                throw new Error('Error: P2P Transaction failed!');
+            }
 
         } catch (err) {
             console.error(err, err.message);
