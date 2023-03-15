@@ -1,12 +1,15 @@
 const speakeasy = require('speakeasy');
 const env = require('./env');
 
-async function get2FACode() {
+async function get2FACode () {
     console.log('2FA App: ', env.TWO_FACTOR_SECRET);
 
     const secretCode = speakeasy.generateSecret({
         name: env.TWO_FACTOR_SECRET,
     });
+
+    console.log('Secret Code:');
+    console.log(secretCode);
 
     return {
         otpAuthUrl: secretCode.otpauth_url,
@@ -14,7 +17,7 @@ async function get2FACode() {
     };
 }
 
-async function verify2FACode(authToken, secretToken) {
+async function verify2FACode (authToken, secretToken) {
     return speakeasy.totp.verify({
         secret: secretToken,
         encoding: 'base32',
@@ -22,7 +25,7 @@ async function verify2FACode(authToken, secretToken) {
     });
 }
 
-async function createCookie(tokenData) {
+async function createCookie (tokenData) {
     return `Authorization=${tokenData.token}; Http-Only; Max-Age=${tokenData.expiresIn}`;
 }
 

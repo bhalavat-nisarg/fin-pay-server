@@ -12,7 +12,7 @@ const limiter = rateLimit({
 });
 
 const app = express();
-const port = env.PORT || 3000;
+const port = env.PORT;
 
 // apply rate limiter to all requests
 app.use(limiter);
@@ -25,17 +25,6 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 app.set('title', 'FinPay Server');
-
-// Mode = 1 // NoSQL Database (MongoDB)
-// app.post('/api/users/register', async (req, res) => {
-//     let out;
-//     console.log(req.body.user);
-//     out = await mongoFn.getUser(req.body.user);
-//     // console.log(out);
-//     res.status(202).send({ out });
-//     // res.status(202).send({ status: out.status, message: out.message });
-// });
-
 
 app.post('/api/users/register', fn.registerUser);
 app.post('/api/users/login', fn.loginUser);
@@ -51,6 +40,9 @@ app.get('/api/users/:id', fn.getUsers);
 app.get('/api/users', fn.getUsers);
 
 app.post('/api/txn/exchange', fn.userTransaction);
+
+// Server up check
+app.get('/api', fn.serverCheck);
 
 
 app.all('*', (req, res) => {

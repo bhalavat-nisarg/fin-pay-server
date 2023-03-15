@@ -177,10 +177,10 @@ const updateUser = async (updateUser) => {
 };
 
 const enableMFA = async (userMFA) => {
-    let query = { _id: userMFA._id };
+    let query = { _id: new mongo.ObjectId(userMFA._id) };
 
     try {
-        let result = await collection.findOneAndUpdate(query, {
+        let result = await collection.updateOne(query, {
             $set: {
                 mfa: 'Y',
                 token: userMFA.token,
@@ -197,13 +197,13 @@ const enableMFA = async (userMFA) => {
 };
 
 const deleteMFA = async (userMFA) => {
-    let query = { _id: userMFA._id };
+    let query = { _id: new mongo.ObjectId(userMFA._id) };
 
     try {
-        let result = await collection.findOneAndUpdate(query, {
+        let result = await collection.updateOne(query, {
             $set: {
                 mfa: 'N',
-                token: null,
+                token: '',
                 lastUpdateDate: new Date(),
             }
         });

@@ -17,6 +17,10 @@ if (env.APP_MODE == 0) {
 const users = require('../utils/mongoFn');
 const txn = require('../utils/mongoTxn');
 
+const serverCheck = async (req, res) => {
+    res.status(200).send('Server is running!');
+};
+
 const saltRounds = 10;
 
 async function registerUser (req, res) {
@@ -29,6 +33,9 @@ async function registerUser (req, res) {
         };
     } else {
         console.log('Registering user..');
+
+        console.log(req);
+        console.log(req.body);
         const hashPass = await bcrypt.hash(req.body.user.password, saltRounds);
         console.log(hashPass);
         out = await users.createUser({
@@ -233,7 +240,7 @@ async function enable2FAfn (req, res) {
         ) {
             const val = await authQ.get2FACode();
             await users.enableMFA({
-                _Id: auth.userId,
+                _id: auth.userId,
                 token: transform.encodeText(val.base32),
             });
             await QRCode.toFileStream(res, val.otpAuthUrl);
@@ -517,4 +524,5 @@ module.exports = {
     enable2FAfn,
     verify2FAfn,
     delete2FAfn,
+    serverCheck,
 };
