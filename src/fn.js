@@ -100,11 +100,9 @@ async function getUsers (req, res) {
         });
     } else {
         console.log('Searching user based on query');
-        if (username || email || mobile || id) {
+        if (username || id) {
             const user = {
                 username: username,
-                email: email,
-                mobile: mobile,
                 _id: id,
             };
             resp = await users.getUser(user);
@@ -339,6 +337,8 @@ async function userTransaction (req, res) {
     const method = req.body.method;
     const mode = req.body.mode;
     const desc = req.body.description;
+    const sourceUser = req.body.sourceUser;
+    const targetUser = req.body.targetUser;
 
     const auth = await authentication(req, res);
 
@@ -351,6 +351,8 @@ async function userTransaction (req, res) {
         method,
         mode,
         desc,
+        sourceUser,
+        targetUser
     };
 
     if (auth.status == 503) {
@@ -366,13 +368,13 @@ async function userTransaction (req, res) {
             message: auth.message,
         });
     } else if (
-        !targetId ||
-        !sourceId ||
         !currency ||
         !gateway ||
         !amount ||
         !method ||
-        !mode
+        !mode ||
+        !sourceUser ||
+        !targetUser
     ) {
         res.status(400).send({
             status: 400,

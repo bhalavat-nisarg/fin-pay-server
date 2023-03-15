@@ -4,11 +4,12 @@ const collectionTxn = mongo.collectionTxn;
 const collectionUser = mongo.collectionUser;
 
 const loadMoney = async (txnObj) => {
-    let query = { _id: new mongo.ObjectId(txnObj.sourceId) };
+    let sourceQry = { username: txnObj.sourceUser };
+    let targetQry = { username: txnObj.targetUser };
     let response;
 
     if (txnObj.mode.toUpperCase() === 'DEPOSIT') {
-        if (txnObj.amount < 25.00) {
+        if (txnObj.amount < 25.00 || txnObj.amount < 0) {
 
             collectionTxn.insertOne({
                 gateway: 'FinPay',
@@ -20,11 +21,11 @@ const loadMoney = async (txnObj) => {
                 amount: txnObj.amount,
                 currency: txnObj.currency,
                 auth_id: null,
-                source_id: txnObj.sourceId,
-                target_id: txnObj.targetId,
+                source_id: txnObj.sourceUser,
+                target_id: txnObj.targetUser,
                 txn_event: 'DEPOSIT',
                 creation_date: new Date(),
-                created_by: txnObj.sourceId
+                created_by: txnObj.sourceUser
             });
 
             return response = {
@@ -34,13 +35,13 @@ const loadMoney = async (txnObj) => {
         }
 
         try {
-            let user = await collectionUser.findOne(query);
+            let sourceUser = await collectionUser.findOne(sourceQry);
 
-            console.log('Printing user', user);
+            console.log('Printing user', sourceUser);
 
             let result = await collectionUser.updateOne(
-                query,
-                { $set: { 'balance': user.balance + txnObj.amount } }
+                sourceQry,
+                { $set: { 'balance': sourceUser.balance + txnObj.amount } }
             );
             console.log('Inside Deposit update..');
 
@@ -57,11 +58,11 @@ const loadMoney = async (txnObj) => {
                     amount: txnObj.amount,
                     currency: txnObj.currency,
                     auth_id: null,
-                    source_id: txnObj.sourceId,
-                    target_id: txnObj.targetId,
+                    source_id: txnObj.sourceUser,
+                    target_id: txnObj.targetUser,
                     txn_event: 'DEPOSIT',
                     creation_date: new Date(),
-                    created_by: txnObj.sourceId
+                    created_by: txnObj.sourceUser
                 });
 
                 return null;
@@ -82,26 +83,26 @@ const loadMoney = async (txnObj) => {
                 amount: txnObj.amount,
                 currency: txnObj.currency,
                 auth_id: null,
-                source_id: txnObj.sourceId,
-                target_id: txnObj.targetId,
+                source_id: txnObj.sourceUser,
+                target_id: txnObj.targetUser,
                 txn_event: 'DEPOSIT',
                 creation_date: new Date(),
-                created_by: txnObj.sourceId
+                created_by: txnObj.sourceUser
             });
 
             return err;
         }
     } else if (txnObj.mode.toUpperCase() === 'WITHDRAW') {
-        let user;
+        let sourceUser;
 
         try {
-            user = await collectionUser.findOne(query);
+            sourceUser = await collectionUser.findOne(sourceQry);
         } catch (err) {
             console.error(err, err.message);
             return err;
         }
 
-        if (txnObj.amount < user.balance) {
+        if (txnObj.amount > sourceUser.balance || txnObj.amount < 0) {
 
             collectionTxn.insertOne({
                 gateway: 'FinPay',
@@ -109,27 +110,27 @@ const loadMoney = async (txnObj) => {
                 description: null,
                 metadata: {},
                 status: 'E',
-                error_msg: `Insufficient Balance!`,
+                error_msg: `Insufficient Balance or Invalid Amount!!`,
                 amount: txnObj.amount,
                 currency: txnObj.currency,
                 auth_id: null,
-                source_id: txnObj.sourceId,
-                target_id: txnObj.targetId,
+                source_id: txnObj.sourceUser,
+                target_id: txnObj.targetUser,
                 txn_event: 'WITHDRAW',
                 creation_date: new Date(),
-                created_by: txnObj.sourceId
+                created_by: txnObj.sourceUser
             });
 
             return response = {
                 status: 400,
-                message: `Insufficient Balance!`,
+                message: `Insufficient Balance or Invalid Amount!`,
             };
         }
 
         try {
             let result = await collectionUser.updateOne(
-                query,
-                { $set: { 'balance': user.balance - txnObj.amount } }
+                sourceQry,
+                { $set: { 'balance': sourceUser.balance - txnObj.amount } }
             );
 
             if (result.modifiedCount > 0) {
@@ -143,11 +144,11 @@ const loadMoney = async (txnObj) => {
                     amount: txnObj.amount,
                     currency: txnObj.currency,
                     auth_id: null,
-                    source_id: txnObj.sourceId,
-                    target_id: txnObj.targetId,
+                    source_id: txnObj.sourceUser,
+                    target_id: txnObj.targetUser,
                     txn_event: 'WITHDRAW',
                     creation_date: new Date(),
-                    created_by: txnObj.sourceId
+                    created_by: txnObj.sourceUser
                 });
 
                 return null;
@@ -169,11 +170,11 @@ const loadMoney = async (txnObj) => {
                 amount: txnObj.amount,
                 currency: txnObj.currency,
                 auth_id: null,
-                source_id: txnObj.sourceId,
-                target_id: txnObj.targetId,
+                source_id: txnObj.sourceUser,
+                target_id: txnObj.targetUser,
                 txn_event: 'WITHDRAW',
                 creation_date: new Date(),
-                created_by: txnObj.sourceId
+                created_by: txnObj.sourceUser
             });
 
             return err;
@@ -183,16 +184,14 @@ const loadMoney = async (txnObj) => {
         let targetUser;
 
         try {
-            sourceUser = await collectionUser.findOne(query);
-            targetUser = await collectionUser.findOne(
-                { _id: new mongo.ObjectId(txnObj.targetId) }
-            );
+            sourceUser = await collectionUser.findOne(sourceQry);
+            targetUser = await collectionUser.findOne(targetQry);
         } catch (err) {
             console.error(err, err.message);
             return err;
         }
 
-        if (txnObj.amount < sourceUser.balance) {
+        if (txnObj.amount > sourceUser.balance || txnObj.amount < 0) {
 
             collectionTxn.insertOne({
                 gateway: 'FinPay',
@@ -200,31 +199,31 @@ const loadMoney = async (txnObj) => {
                 description: null,
                 metadata: {},
                 status: 'E',
-                error_msg: `Insufficient Balance in Source Account!`,
+                error_msg: `Insufficient Balance or Invalid Amount in Source!`,
                 amount: txnObj.amount,
                 currency: txnObj.currency,
                 auth_id: null,
-                source_id: txnObj.sourceId,
-                target_id: txnObj.targetId,
+                source_id: txnObj.sourceUser,
+                target_id: txnObj.targetUser,
                 txn_event: 'P2P',
                 creation_date: new Date(),
-                created_by: txnObj.sourceId
+                created_by: txnObj.sourceUser
             });
 
             return response = {
                 status: 400,
-                message: `Insufficient Balance!`,
+                message: `Insufficient Balance or Invalid Amount!`,
             };
         }
 
         try {
             let source = await collectionUser.updateOne(
-                query,
+                sourceQry,
                 { $set: { 'balance': sourceUser.balance - txnObj.amount } }
             );
 
             let target = await collectionUser.updateOne(
-                { _id: new mongo.ObjectId(txnObj.targetId) },
+                targetQry,
                 { $set: { 'balance': targetUser.balance + txnObj.amount } }
             );
 
@@ -239,11 +238,11 @@ const loadMoney = async (txnObj) => {
                     amount: txnObj.amount,
                     currency: txnObj.currency,
                     auth_id: null,
-                    source_id: txnObj.sourceId,
-                    target_id: txnObj.targetId,
+                    source_id: txnObj.sourceUser,
+                    target_id: txnObj.targetUser,
                     txn_event: 'P2P',
                     creation_date: new Date(),
-                    created_by: txnObj.sourceId
+                    created_by: txnObj.sourceUser
                 });
 
                 return null;
@@ -263,17 +262,16 @@ const loadMoney = async (txnObj) => {
                 amount: txnObj.amount,
                 currency: txnObj.currency,
                 auth_id: null,
-                source_id: txnObj.sourceId,
-                target_id: txnObj.targetId,
+                source_id: txnObj.sourceUser,
+                target_id: txnObj.targetUser,
                 txn_event: 'P2P',
                 creation_date: new Date(),
-                created_by: txnObj.sourceId
+                created_by: txnObj.sourceUser
             });
 
             return err;
         }
     }
-
 
 };
 

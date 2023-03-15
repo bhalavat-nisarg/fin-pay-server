@@ -98,9 +98,7 @@ const getAllUsers = async () => {
 const getUser = async (user) => {
     let query = {
         $or: [
-            { _id: user.id },
-            { username: user.username },
-            { email: user.email },
+            { _id: new mongo.ObjectId(user._id) },
             { mobile: user.mobile }
         ]
     };

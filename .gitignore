@@ -3,3 +3,4 @@
 .vscode
 /keys/config
 *.pem
+users.json
