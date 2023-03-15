@@ -34,8 +34,8 @@ async function registerUser (req, res) {
     } else {
         console.log('Registering user..');
 
-        console.log(req);
-        console.log(req.body);
+        // console.log(req);
+        // console.log(req.body);
         const hashPass = await bcrypt.hash(req.body.user.password, saltRounds);
         console.log(hashPass);
         out = await users.createUser({

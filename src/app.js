@@ -21,7 +21,7 @@ app.use(limiter);
 
 const mode = env.APP_MODE;
 
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.set('title', 'FinPay Server');
