@@ -12,7 +12,14 @@ This is the server-side application FinPay Server. The server is connected to Au
 6. Withdraw money
 7. Peer-to-Peer (P2P) transfer
 8. Register for MFA
-    - Currently only [Google Authenticator](https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2) is supported
+    - Android
+        - [Google Authenticator](https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2)
+        - [Microsoft Authenticator](https://play.google.com/store/apps/details?id=com.azure.authenticator)
+        - [Twilio Authy Authenticator](https://play.google.com/store/apps/details?id=com.authy.authy)
+    - iOS
+        - [Google Authenticator](https://apps.apple.com/us/app/google-authenticator/id388497605)
+        - [Microsoft Authenticator](https://apps.apple.com/us/app/microsoft-authenticator/id983156458)
+        - [Twilio Authy Authenticator](https://apps.apple.com/us/app/twilio-authy/id494168017)
 
 ---
 
@@ -26,7 +33,7 @@ To run this application on your location system, the following installations are
 4. Oracle ADB (Free Tier) or MongoDB
 5. Oracle Home (Instant Client or Oracle XE) (Optional for NoSQL)
 6. OCI SDK (Optional for NoSQL)
-7. Google Authenticator (Optional)
+7. Authenticator App (Optional)
 
 ---
 
