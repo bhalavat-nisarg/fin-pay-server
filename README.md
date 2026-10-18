@@ -39,6 +39,9 @@ To run this application on your location system, the following installations are
 
 ## API Endpoints
 
+Run `npm test` to check Express route registration, request parsing, and fallback
+responses without connecting to Oracle or MongoDB.
+
 URL: `http://(localhost):(port)/api`
 
 > **Note:** If the Oracle ADB is not available for use, i.e. service is unavailable, kindly check the `Retry-After` header for the wait time.
