@@ -23,6 +23,10 @@ const mode = env.APP_MODE;
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use((req, res, next) => {
+    req.body ??= {};
+    next();
+});
 
 app.set('title', 'FinPay Server');
 
@@ -45,7 +49,7 @@ app.post('/api/txn/exchange', fn.userTransaction);
 app.get('/api', fn.serverCheck);
 
 
-app.all('*', (req, res) => {
+app.use((req, res) => {
     res.status(405).send({ status: 405, message: 'Method not allowed' });
 });
 
